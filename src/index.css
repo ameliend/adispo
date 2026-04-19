@@ -1,0 +1,130 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* ── Skip link ─────────────────────────────────────────────────── */
+.skip-link {
+  position: absolute;
+  top: -9999px;
+  left: 0;
+  z-index: 9999;
+  padding: 0.75rem 1.5rem;
+  background: #000;
+  color: #fff;
+  font-size: 1.125rem;
+  font-weight: 600;
+  text-decoration: none;
+  border-radius: 0 0 4px 0;
+}
+
+.skip-link:focus {
+  top: 0;
+}
+
+/* ── Focus ring (overrides browser default and Tailwind) ───────── */
+:focus-visible {
+  outline: 3px solid #000;
+  outline-offset: 2px;
+}
+
+@media (prefers-color-scheme: dark) {
+  :focus-visible {
+    outline-color: #fff;
+  }
+}
+
+/* Remove default outline; rely on :focus-visible above */
+:focus:not(:focus-visible) {
+  outline: none;
+}
+
+/* ── Reduced motion ─────────────────────────────────────────────── */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}
+
+/* ── Base typography ────────────────────────────────────────────── */
+html {
+  font-size: 18px;
+}
+
+body {
+  font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  font-size: 1rem;
+  line-height: 1.6;
+  background-color: #fff;
+  color: #000;
+  -webkit-font-smoothing: antialiased;
+}
+
+@media (prefers-color-scheme: dark) {
+  body {
+    background-color: #0a0a0a;
+    color: #f5f5f5;
+  }
+}
+
+/* ── Touch targets — 48px minimum on all interactive elements ───── */
+button,
+a,
+select,
+input[type='checkbox'],
+input[type='radio'],
+input[type='submit'],
+input[type='button'] {
+  min-height: 48px;
+}
+
+input[type='checkbox'],
+input[type='radio'] {
+  min-width: 24px;
+  min-height: 24px;
+  width: 24px;
+  height: 24px;
+  cursor: pointer;
+}
+
+/* ── Progress element accessibility ────────────────────────────── */
+progress {
+  appearance: none;
+  width: 100%;
+  height: 8px;
+  border-radius: 4px;
+  overflow: hidden;
+}
+
+progress::-webkit-progress-bar {
+  background: #e5e7eb;
+  border-radius: 4px;
+}
+
+progress::-webkit-progress-value {
+  background: #1d4ed8;
+  border-radius: 4px;
+}
+
+@media (prefers-color-scheme: dark) {
+  progress::-webkit-progress-bar {
+    background: #374151;
+  }
+}
+
+/* ── Utility: visually hidden but readable by screen readers ───── */
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border-width: 0;
+}
