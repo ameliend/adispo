@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react'
 import { getRecentContributions, getRandomByPlatform } from '../lib/supabase.js'
 import { PLATFORM_LABELS } from '../lib/platforms.js'
 import TrustBadge from './TrustBadge.jsx'
+import { posterUrl } from '../lib/tmdb.js'
 
 function timeAgo(dateStr) {
   const diff = Date.now() - new Date(dateStr).getTime()
@@ -25,9 +26,9 @@ function PlatformMiniCard({ content, onViewDetail }) {
       >
         <div className="flex items-start justify-between gap-3 flex-wrap">
           <div className="flex items-center gap-3 min-w-0">
-            {content.poster_path && (
+            {posterUrl(content.poster_path) && (
               <img
-                src={content.poster_path}
+                src={posterUrl(content.poster_path)}
                 alt=""
                 aria-hidden="true"
                 width={30}

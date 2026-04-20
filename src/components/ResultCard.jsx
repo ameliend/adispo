@@ -3,6 +3,7 @@ import TrustBadge from './TrustBadge.jsx'
 import ContributionForm from './ContributionForm.jsx'
 import { incrementValidation } from '../lib/supabase.js'
 import { PLATFORM_LABELS } from '../lib/platforms.js'
+import { posterUrl } from '../lib/tmdb.js'
 
 const STATUS_LABELS = {
   available: 'Audiodescription disponible',
@@ -33,7 +34,7 @@ export default function ResultCard({ content, adStatuses, onValidated, onViewDet
     }
   }
 
-  const poster = content.poster_path || content.posterPath
+  const poster = posterUrl(content.poster_path || content.posterPath)
 
   return (
     <article
