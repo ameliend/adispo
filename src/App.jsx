@@ -1,4 +1,5 @@
 import { useCallback, useRef, useState } from 'react'
+import HomePage from './components/HomePage.jsx'
 import SearchPage from './components/SearchPage.jsx'
 import AddTitlePage from './components/AddTitlePage.jsx'
 import ContentDetailPage from './components/ContentDetailPage.jsx'
@@ -6,9 +7,10 @@ import PlatformPage from './components/PlatformPage.jsx'
 import { PLATFORM_LABELS } from './lib/platforms.js'
 
 export default function App() {
-  const [page, setPage] = useState('search')
+  const [page, setPage] = useState('home')
   const [selectedContent, setSelectedContent] = useState(null)
   const [selectedPlatform, setSelectedPlatform] = useState(null)
+  const [addInitialTitle, setAddInitialTitle] = useState(null)
   const [announcement, setAnnouncement] = useState('')
   const [toast, setToast] = useState('')
 
@@ -32,10 +34,12 @@ export default function App() {
   function navigate(newPage, params = {}) {
     if (params.content !== undefined) setSelectedContent(params.content)
     if (params.platform !== undefined) setSelectedPlatform(params.platform)
+    if (params.initialTitle !== undefined) setAddInitialTitle(params.initialTitle)
     setPage(newPage)
 
     const labels = {
-      search: "Accueil — Rechercher un titre",
+      home: 'Accueil',
+      search: 'Rechercher un titre',
       add: 'Ajouter un titre',
       content: params.content ? `Détail : ${params.content.title}` : 'Détail du contenu',
       platform: params.platform
@@ -47,13 +51,12 @@ export default function App() {
   }
 
   function handleAddSuccess() {
-    navigate('search')
+    navigate('home')
     showToast('Le titre a été ajouté avec succès. Merci pour votre contribution !')
   }
 
   return (
     <>
-      {/* Skip to main content — must be first focusable element */}
       <a href="#main-content" className="skip-link">
         Aller au contenu principal
       </a>
@@ -69,7 +72,7 @@ export default function App() {
         {announcement}
       </div>
 
-      {/* Toast announcer — always in DOM so ARIA picks up changes */}
+      {/* Toast announcer */}
       <div
         role="status"
         aria-live="polite"
@@ -95,7 +98,7 @@ export default function App() {
           <div className="flex items-center justify-between gap-4 flex-wrap">
             <h1 className="text-2xl font-bold">
               <button
-                onClick={() => navigate('search')}
+                onClick={() => navigate('home')}
                 className="hover:underline focus-visible:outline-none focus-visible:ring focus-visible:ring-offset-2 focus-visible:ring-black dark:focus-visible:ring-white rounded"
               >
                 ADispo
@@ -106,9 +109,9 @@ export default function App() {
               </span>
             </h1>
 
-            {page !== 'search' && (
+            {page !== 'home' && (
               <button
-                onClick={() => navigate('search')}
+                onClick={() => navigate('home')}
                 className="flex items-center gap-2 px-4 py-2 min-h-touch text-sm font-medium border-2 border-black dark:border-white rounded hover:bg-gray-100 dark:hover:bg-gray-800 focus-visible:outline-none focus-visible:ring focus-visible:ring-offset-2 focus-visible:ring-black dark:focus-visible:ring-white"
               >
                 ← Accueil
@@ -124,32 +127,39 @@ export default function App() {
         ref={mainRef}
         className="max-w-2xl mx-auto px-4 py-8 focus-visible:outline-none"
       >
+        {page === 'home' && (
+          <HomePage
+            onNavigateSearch={() => navigate('search')}
+            onViewDetail={(content) => navigate('content', { content })}
+            onViewPlatform={(platform) => navigate('platform', { platform })}
+          />
+        )}
         {page === 'search' && (
           <SearchPage
             announce={announce}
             onViewDetail={(content) => navigate('content', { content })}
-            onViewPlatform={(platform) => navigate('platform', { platform })}
-            onNavigateAdd={() => navigate('add')}
+            onNavigateAdd={(title) => navigate('add', { initialTitle: title || null })}
           />
         )}
         {page === 'add' && (
           <AddTitlePage
             announce={announce}
             onSubmitSuccess={handleAddSuccess}
+            initialTitle={addInitialTitle}
           />
         )}
         {page === 'content' && selectedContent && (
           <ContentDetailPage
             content={selectedContent}
             announce={announce}
-            onBack={() => navigate('search')}
+            onBack={() => navigate('home')}
           />
         )}
         {page === 'platform' && selectedPlatform && (
           <PlatformPage
             platform={selectedPlatform}
             announce={announce}
-            onBack={() => navigate('search')}
+            onBack={() => navigate('home')}
             onViewDetail={(content) => navigate('content', { content })}
           />
         )}

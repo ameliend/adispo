@@ -3,12 +3,12 @@ import { searchTmdb, getTmdbDetails } from '../lib/tmdb.js'
 import { submitNewTitle, checkContentExists } from '../lib/supabase.js'
 import { PLATFORMS, PLATFORM_LABELS } from '../lib/platforms.js'
 
-export default function AddTitlePage({ announce, onSubmitSuccess }) {
-  const [step, setStep] = useState(1)
+export default function AddTitlePage({ announce, onSubmitSuccess, initialTitle }) {
+  const [step, setStep] = useState(initialTitle ? 2 : 1)
   const [tmdbQuery, setTmdbQuery] = useState('')
   const [tmdbResults, setTmdbResults] = useState([])
   const [tmdbStatusMsg, setTmdbStatusMsg] = useState('')
-  const [selectedTitle, setSelectedTitle] = useState(null)
+  const [selectedTitle, setSelectedTitle] = useState(initialTitle || null)
   const [selectedPlatforms, setSelectedPlatforms] = useState([])
   const [platformLinks, setPlatformLinks] = useState({})
   const [isSubmitting, setIsSubmitting] = useState(false)
