@@ -38,6 +38,16 @@ export async function searchTitles(query, platform, genre) {
       )
     }
 
+    // Dédoublonne par titre (garde le premier avec poster_path si possible)
+    const seen = new Map()
+    for (const c of filtered) {
+      const key = c.title.toLowerCase()
+      if (!seen.has(key) || (!seen.get(key).poster_path && c.poster_path)) {
+        seen.set(key, c)
+      }
+    }
+    filtered = [...seen.values()]
+
     return { data: filtered, error: null }
   } catch (err) {
     return { data: null, error: err }

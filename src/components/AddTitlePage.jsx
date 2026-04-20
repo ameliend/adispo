@@ -172,7 +172,7 @@ export default function AddTitlePage({ announce, onSubmitSuccess, initialTitle }
             <fieldset className="mb-6">
               <legend className="font-medium mb-3">Sélectionnez un titre</legend>
               <div className="space-y-2">
-                {tmdbResults.map((r) => (
+                {(selectedTitle ? tmdbResults.filter(r => r.tmdbId === selectedTitle.tmdbId) : tmdbResults).map((r) => (
                   <label
                     key={r.tmdbId}
                     className="flex items-center gap-3 p-3 border-2 rounded cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-800 border-gray-300 dark:border-gray-600 has-[:checked]:border-black dark:has-[:checked]:border-white"
