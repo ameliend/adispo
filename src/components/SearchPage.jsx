@@ -26,6 +26,7 @@ export default function SearchPage({
   announce,
   onViewDetail,
   onNavigateAdd,
+  onBack,
   initialTitle,
 }) {
   // TMDB autocomplete
@@ -125,6 +126,13 @@ export default function SearchPage({
 
   return (
     <>
+      <button
+        onClick={onBack}
+        className="mb-6 text-sm font-medium underline hover:no-underline focus-visible:outline-none focus-visible:ring focus-visible:ring-offset-2 focus-visible:ring-black dark:focus-visible:ring-white"
+      >
+        ← Retour
+      </button>
+
       {/* TMDB status live region */}
       <div aria-live="polite" aria-atomic="true" className="sr-only" id="tmdb-search-status">
         {tmdbStatus}
