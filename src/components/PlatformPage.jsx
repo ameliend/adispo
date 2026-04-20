@@ -85,7 +85,7 @@ export default function PlatformPage({ platform, onBack, onViewDetail }) {
                     className="w-full text-left p-3 border-2 border-gray-200 dark:border-gray-700 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-800 hover:border-black dark:hover:border-white focus-visible:outline-none focus-visible:ring focus-visible:ring-offset-2 focus-visible:ring-black dark:focus-visible:ring-white"
                     aria-label={`Voir le détail de ${content.title}${content.year ? ` (${content.year})` : ''}`}
                   >
-                    <div className="flex items-start justify-between gap-4 flex-wrap">
+                    <div className="flex items-center justify-between gap-4 flex-nowrap">
                       <div className="flex items-center gap-3 min-w-0">
                         {posterUrl(content.poster_path) && (
                           <img
@@ -99,7 +99,7 @@ export default function PlatformPage({ platform, onBack, onViewDetail }) {
                           />
                         )}
                         <div className="min-w-0">
-                          <span className="font-semibold">{content.title}</span>
+                          <span className="font-semibold truncate block">{content.title}</span>
                           {content.year && (
                             <span className="text-sm text-gray-700 dark:text-gray-300 ml-2">
                               ({content.year})
@@ -113,7 +113,9 @@ export default function PlatformPage({ platform, onBack, onViewDetail }) {
                         </div>
                       </div>
                       {adStatus && adStatus.validation_count > 0 && (
-                        <TrustBadge validationCount={adStatus.validation_count} />
+                        <div className="flex-shrink-0">
+                          <TrustBadge validationCount={adStatus.validation_count} />
+                        </div>
                       )}
                     </div>
                   </button>
