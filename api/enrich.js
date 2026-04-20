@@ -59,7 +59,6 @@ export default async function handler(req, res) {
     const isMovie = tmdb.media_type === 'movie'
     const genreId = (tmdb.genre_ids || [])[0]
     const update = {
-      tmdb_id: String(tmdb.id),
       year: isMovie
         ? (tmdb.release_date || '').slice(0, 4) || null
         : (tmdb.first_air_date || '').slice(0, 4) || null,
