@@ -83,7 +83,9 @@ for (let ci = 0; ci < chunks.length; ci++) {
   sql += `FROM (VALUES\n`
   const adRows = chunk.map(e => {
     const status = e.status || 'available'
-    const trust = e.trust_level || 'Signalé'
+    const trustRaw = e.trust_level || 'Signalé'
+    const trustMap = { 'signalé': 'Signalé', 'confirmé': 'Confirmé', 'fiable': 'Fiable' }
+    const trust = trustMap[trustRaw.toLowerCase()] || trustRaw
     const count = e.validation_count || 1
     const lien = e.link ? `'${esc(e.link)}'` : 'NULL'
     return `  (${e.tmdbId}, '${esc(e.platform)}', '${esc(status)}', '${esc(trust)}', ${count}, ${lien})`
