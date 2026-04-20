@@ -104,14 +104,6 @@ export default function App() {
               </span>
             </h1>
 
-            {page !== 'home' && (
-              <button
-                onClick={() => navigate('home')}
-                className="flex items-center gap-2 px-4 py-2 min-h-touch text-sm font-medium border-2 border-black dark:border-white rounded hover:bg-gray-100 dark:hover:bg-gray-800 focus-visible:outline-none focus-visible:ring focus-visible:ring-offset-2 focus-visible:ring-black dark:focus-visible:ring-white"
-              >
-                ← Accueil
-              </button>
-            )}
           </div>
         </div>
       </header>
