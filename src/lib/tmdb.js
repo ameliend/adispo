@@ -2,6 +2,12 @@ const TMDB_BASE = 'https://api.themoviedb.org/3'
 const TMDB_IMAGE_THUMB = 'https://image.tmdb.org/t/p/w92'
 const TMDB_IMAGE_MEDIUM = 'https://image.tmdb.org/t/p/w185'
 
+export function posterUrl(path, size = 'w185') {
+  if (!path) return null
+  if (path.startsWith('http')) return path
+  return `https://image.tmdb.org/t/p/${size}${path}`
+}
+
 function apiKey() {
   return import.meta.env.VITE_TMDB_API_KEY
 }

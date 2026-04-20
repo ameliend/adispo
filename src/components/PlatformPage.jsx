@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react'
 import { getContentsByPlatform } from '../lib/supabase.js'
 import { PLATFORM_LABELS } from '../lib/platforms.js'
 import TrustBadge from './TrustBadge.jsx'
+import { posterUrl } from '../lib/tmdb.js'
 
 export default function PlatformPage({ platform, onBack, onViewDetail }) {
   const [contents, setContents] = useState([])
@@ -61,9 +62,9 @@ export default function PlatformPage({ platform, onBack, onViewDetail }) {
                   >
                     <div className="flex items-start justify-between gap-4 flex-wrap">
                       <div className="flex items-center gap-3 min-w-0">
-                        {content.poster_path && (
+                        {posterUrl(content.poster_path) && (
                           <img
-                            src={content.poster_path}
+                            src={posterUrl(content.poster_path)}
                             alt=""
                             aria-hidden="true"
                             width={30}

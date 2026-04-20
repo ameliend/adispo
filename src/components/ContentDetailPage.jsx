@@ -3,6 +3,7 @@ import TrustBadge from './TrustBadge.jsx'
 import ContributionForm from './ContributionForm.jsx'
 import { incrementValidation } from '../lib/supabase.js'
 import { PLATFORM_LABELS } from '../lib/platforms.js'
+import { posterUrl } from '../lib/tmdb.js'
 
 const STATUS_LABELS = {
   available: 'Audiodescription disponible',
@@ -46,9 +47,9 @@ export default function ContentDetailPage({ content, announce, onBack }) {
       </button>
 
       <div className="flex gap-6 items-start mb-8">
-        {(content.poster_path || content.posterPath) && (
+        {posterUrl(content.poster_path || content.posterPath) && (
           <img
-            src={content.poster_path || content.posterPath}
+            src={posterUrl(content.poster_path || content.posterPath)}
             alt={`Affiche de ${content.title}`}
             width={90}
             height={135}
