@@ -98,7 +98,7 @@ export default function HomePage({ onNavigateSearch, onViewDetail, onViewPlatfor
         <section aria-labelledby="canal-section-title" className="mb-12">
           <div className="flex items-baseline justify-between gap-4 mb-4 flex-wrap">
             <h2 id="canal-section-title" className="text-xl font-bold">
-              Canal+ — Audiodescription disponible
+              CANAL+
             </h2>
             <button
               onClick={() => onViewPlatform('canal')}
@@ -124,7 +124,7 @@ export default function HomePage({ onNavigateSearch, onViewDetail, onViewPlatfor
         <section aria-labelledby="netflix-section-title" className="mb-12">
           <div className="flex items-baseline justify-between gap-4 mb-4 flex-wrap">
             <h2 id="netflix-section-title" className="text-xl font-bold">
-              Netflix — Audiodescription disponible
+              Netflix
             </h2>
             <button
               onClick={() => onViewPlatform('netflix')}
