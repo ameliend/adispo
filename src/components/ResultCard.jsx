@@ -2,14 +2,7 @@ import { useRef, useState } from 'react'
 import TrustBadge from './TrustBadge.jsx'
 import ContributionForm from './ContributionForm.jsx'
 import { incrementValidation } from '../lib/supabase.js'
-
-const PLATFORM_LABELS = {
-  netflix: 'Netflix',
-  prime: 'Prime Video',
-  disney: 'Disney+',
-  apple: 'Apple TV+',
-  canal: 'Canal+',
-}
+import { PLATFORM_LABELS } from '../lib/platforms.js'
 
 const STATUS_LABELS = {
   available: 'Audiodescription disponible',
@@ -17,7 +10,7 @@ const STATUS_LABELS = {
   unverified: 'Non encore vérifié',
 }
 
-export default function ResultCard({ content, adStatuses, onValidated }) {
+export default function ResultCard({ content, adStatuses, onValidated, onViewDetail }) {
   const [activeReportId, setActiveReportId] = useState(null)
   const [validatedIds, setValidatedIds] = useState({})
   const [localCounts, setLocalCounts] = useState({})
@@ -32,21 +25,15 @@ export default function ResultCard({ content, adStatuses, onValidated }) {
       setValidatedIds((prev) => ({ ...prev, [statusId]: true }))
       setLocalCounts((prev) => ({
         ...prev,
-        [statusId]: (prev[statusId] ?? (adStatuses.find((s) => s.id === statusId)?.validation_count ?? 0)) + 1,
+        [statusId]:
+          (prev[statusId] ??
+            (adStatuses.find((s) => s.id === statusId)?.validation_count ?? 0)) + 1,
       }))
       onValidated?.(`Merci pour votre validation sur ${PLATFORM_LABELS[platform] || platform}.`)
     }
   }
 
-  function handleReportOpen(statusId) {
-    setActiveReportId(statusId)
-  }
-
-  function handleReportClose() {
-    setActiveReportId(null)
-  }
-
-  const platformName = (p) => PLATFORM_LABELS[p] || p
+  const poster = content.poster_path || content.posterPath
 
   return (
     <article
@@ -54,29 +41,38 @@ export default function ResultCard({ content, adStatuses, onValidated }) {
       className="py-6 border-b-2 border-gray-200 dark:border-gray-700"
     >
       <div className="flex gap-4 items-start">
-        {content.posterPath ? (
+        {poster && (
           <img
-            src={content.posterPath}
+            src={poster}
             alt={`Affiche de ${content.title}`}
             width={46}
             height={69}
             className="rounded flex-shrink-0 object-cover"
             loading="lazy"
           />
-        ) : null}
+        )}
 
         <div className="flex-1 min-w-0">
           <h2 id={`title-${content.id}`} className="text-xl font-bold mb-1">
-            {content.title}
-            {content.year ? (
+            {onViewDetail ? (
+              <button
+                onClick={() => onViewDetail(content)}
+                className="hover:underline focus-visible:outline-none focus-visible:ring focus-visible:ring-offset-2 focus-visible:ring-black dark:focus-visible:ring-white rounded text-left"
+              >
+                {content.title}
+              </button>
+            ) : (
+              content.title
+            )}
+            {content.year && (
               <span className="font-normal text-base ml-2 text-gray-700 dark:text-gray-300">
                 ({content.year})
               </span>
-            ) : null}
+            )}
           </h2>
 
-          <p className="text-sm text-gray-700 dark:text-gray-300 mb-4">
-            {content.type === 'tv' ? 'Série' : 'Film'}
+          <p className="text-sm text-gray-700 dark:text-gray-300 mb-3">
+            {content.type === 'tv' ? 'Série' : content.type === 'movie' ? 'Film' : ''}
             {content.genre ? ` — ${content.genre}` : ''}
           </p>
 
@@ -94,13 +90,12 @@ export default function ResultCard({ content, adStatuses, onValidated }) {
                 const validated = validatedIds[status.id]
                 const isReportOpen = activeReportId === status.id
                 const label = STATUS_LABELS[status.status] || status.status
+                const platformName = PLATFORM_LABELS[status.platform] || status.platform
 
                 return (
                   <li key={status.id} className="space-y-2">
                     <div className="flex flex-wrap items-center gap-3">
-                      <span className="font-semibold min-w-[8rem]">
-                        {platformName(status.platform)}
-                      </span>
+                      <span className="font-semibold min-w-[8rem]">{platformName}</span>
                       <span className="text-sm">{label}</span>
                       {count > 0 && <TrustBadge validationCount={count} />}
                     </div>
@@ -113,18 +108,33 @@ export default function ResultCard({ content, adStatuses, onValidated }) {
                           aria-label={`Niveau de confiance : ${count} validation${count > 1 ? 's' : ''} sur 5`}
                           className="w-32 h-2"
                         />
-                        <span className="text-sm text-gray-700 dark:text-gray-300" aria-hidden="true">
+                        <span
+                          className="text-sm text-gray-700 dark:text-gray-300"
+                          aria-hidden="true"
+                        >
                           {count} / 5
                         </span>
                       </div>
                     )}
 
                     <div className="flex flex-wrap gap-3 mt-2">
+                      {status.lien && (
+                        <a
+                          href={status.lien}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          aria-label={`Voir ${content.title} sur ${platformName} (nouvel onglet)`}
+                          className="px-4 py-2 min-h-touch text-sm font-medium bg-black dark:bg-white text-white dark:text-black rounded hover:bg-gray-800 dark:hover:bg-gray-200 focus-visible:outline-none focus-visible:ring focus-visible:ring-offset-2 focus-visible:ring-black dark:focus-visible:ring-white inline-flex items-center"
+                        >
+                          Voir sur {platformName} ↗
+                        </a>
+                      )}
+
                       <button
                         aria-label={
                           validated
-                            ? `Validation enregistrée pour ${platformName(status.platform)}`
-                            : `Valider cette information pour ${platformName(status.platform)}`
+                            ? `Validation enregistrée pour ${platformName}`
+                            : `Valider cette information pour ${platformName}`
                         }
                         disabled={validated}
                         onClick={() => handleValidate(status.id, status.platform)}
@@ -134,11 +144,15 @@ export default function ResultCard({ content, adStatuses, onValidated }) {
                       </button>
 
                       <button
-                        ref={(el) => { reportButtonRefs.current[status.id] = el }}
-                        aria-label={`Signaler une erreur pour ${content.title} sur ${platformName(status.platform)}`}
+                        ref={(el) => {
+                          reportButtonRefs.current[status.id] = el
+                        }}
+                        aria-label={`Signaler une erreur pour ${content.title} sur ${platformName}`}
                         aria-expanded={isReportOpen}
                         onClick={() =>
-                          isReportOpen ? handleReportClose() : handleReportOpen(status.id)
+                          isReportOpen
+                            ? setActiveReportId(null)
+                            : setActiveReportId(status.id)
                         }
                         className="px-4 py-2 min-h-touch text-sm font-medium underline hover:no-underline focus-visible:outline-none focus-visible:ring focus-visible:ring-offset-2 focus-visible:ring-black dark:focus-visible:ring-white"
                       >
@@ -150,8 +164,8 @@ export default function ResultCard({ content, adStatuses, onValidated }) {
                       <ContributionForm
                         contentId={content.id}
                         contentTitle={content.title}
-                        platform={platformName(status.platform)}
-                        onClose={handleReportClose}
+                        platform={platformName}
+                        onClose={() => setActiveReportId(null)}
                         returnFocusRef={{ current: reportButtonRefs.current[status.id] }}
                       />
                     )}
@@ -159,6 +173,15 @@ export default function ResultCard({ content, adStatuses, onValidated }) {
                 )
               })}
             </ul>
+          )}
+
+          {onViewDetail && (
+            <button
+              onClick={() => onViewDetail(content)}
+              className="mt-4 text-sm font-medium underline hover:no-underline focus-visible:outline-none focus-visible:ring focus-visible:ring-offset-2 focus-visible:ring-black dark:focus-visible:ring-white"
+            >
+              Voir la fiche complète →
+            </button>
           )}
         </div>
       </div>

@@ -1,6 +1,8 @@
-import { useEffect, useRef, useState, useCallback } from 'react'
-import { searchTitles, getRecentContributions } from '../lib/supabase.js'
+import { useCallback, useEffect, useState } from 'react'
+import { searchTitles, getRecentContributions, getRandomByPlatform } from '../lib/supabase.js'
+import { PLATFORM_LABELS } from '../lib/platforms.js'
 import ResultCard from './ResultCard.jsx'
+import TrustBadge from './TrustBadge.jsx'
 
 const PLATFORMS = [
   { value: '', label: 'Toutes les plateformes' },
@@ -24,14 +26,59 @@ function timeAgo(dateStr) {
   const diff = Date.now() - new Date(dateStr).getTime()
   const hours = Math.floor(diff / 3600000)
   if (hours < 1) return "il y a moins d'une heure"
-  if (hours === 1) return "il y a 1 heure"
+  if (hours === 1) return 'il y a 1 heure'
   if (hours < 24) return `il y a ${hours} heures`
   const days = Math.floor(hours / 24)
   if (days === 1) return 'il y a 1 jour'
   return `il y a ${days} jours`
 }
 
-export default function SearchPage({ announce }) {
+function PlatformMiniCard({ content, onViewDetail }) {
+  const adStatus = content.ad_status?.[0]
+  return (
+    <li>
+      <button
+        onClick={() => onViewDetail(content)}
+        className="w-full text-left p-3 border-2 border-gray-200 dark:border-gray-700 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-800 hover:border-black dark:hover:border-white focus-visible:outline-none focus-visible:ring focus-visible:ring-offset-2 focus-visible:ring-black dark:focus-visible:ring-white"
+        aria-label={`Voir ${content.title}${content.year ? ` (${content.year})` : ''}`}
+      >
+        <div className="flex items-start justify-between gap-3 flex-wrap">
+          <div className="flex items-center gap-3 min-w-0">
+            {content.poster_path && (
+              <img
+                src={content.poster_path}
+                alt=""
+                aria-hidden="true"
+                width={30}
+                height={45}
+                className="rounded flex-shrink-0 object-cover"
+                loading="lazy"
+              />
+            )}
+            <div className="min-w-0">
+              <span className="font-medium">{content.title}</span>
+              {content.year && (
+                <span className="text-sm text-gray-700 dark:text-gray-300 ml-2">
+                  ({content.year})
+                </span>
+              )}
+              {content.genre && (
+                <span className="block text-sm text-gray-600 dark:text-gray-400 mt-0.5">
+                  {content.genre}
+                </span>
+              )}
+            </div>
+          </div>
+          {adStatus && adStatus.validation_count > 0 && (
+            <TrustBadge validationCount={adStatus.validation_count} />
+          )}
+        </div>
+      </button>
+    </li>
+  )
+}
+
+export default function SearchPage({ announce, onViewDetail, onViewPlatform, onNavigateAdd }) {
   const [query, setQuery] = useState('')
   const [platform, setPlatform] = useState('')
   const [genre, setGenre] = useState('')
@@ -40,13 +87,19 @@ export default function SearchPage({ announce }) {
   const [statusMessage, setStatusMessage] = useState('')
   const [recentAdditions, setRecentAdditions] = useState([])
   const [hasSearched, setHasSearched] = useState(false)
+  const [canalContents, setCanalContents] = useState([])
+  const [netflixContents, setNetflixContents] = useState([])
 
-  const searchInputRef = useRef(null)
-
-  // Load recent contributions on mount
+  // Load recent contributions and platform sections on mount
   useEffect(() => {
     getRecentContributions().then(({ data }) => {
       if (data) setRecentAdditions(data)
+    })
+    getRandomByPlatform('canal', 10).then(({ data }) => {
+      if (data) setCanalContents(data)
+    })
+    getRandomByPlatform('netflix', 10).then(({ data }) => {
+      if (data) setNetflixContents(data)
     })
   }, [])
 
@@ -92,6 +145,8 @@ export default function SearchPage({ announce }) {
     [announce]
   )
 
+  const showPlatformSections = !hasSearched
+
   return (
     <>
       {/* Search status live region */}
@@ -106,15 +161,11 @@ export default function SearchPage({ announce }) {
 
       <search aria-label="Rechercher un titre" className="mb-8">
         <div className="mb-4">
-          <label
-            htmlFor="search-input"
-            className="block mb-2 text-lg font-semibold"
-          >
+          <label htmlFor="search-input" className="block mb-2 text-lg font-semibold">
             Rechercher un titre
           </label>
           <input
             id="search-input"
-            ref={searchInputRef}
             type="search"
             value={query}
             onChange={(e) => setQuery(e.target.value)}
@@ -178,18 +229,28 @@ export default function SearchPage({ announce }) {
         )}
 
         {!isLoading && hasSearched && results.length === 0 && (
-          <p className="text-base">
-            Aucun résultat trouvé.{' '}
-            <span className="text-gray-700 dark:text-gray-300">
-              Essayez un autre titre ou{' '}
-              <span className="font-medium">ajoutez ce titre</span> à la communauté.
-            </span>
-          </p>
+          <div>
+            <p className="text-base mb-4">
+              Aucun résultat trouvé.{' '}
+              <span className="text-gray-700 dark:text-gray-300">
+                Ce titre n'est peut-être pas encore dans notre base.
+              </span>
+            </p>
+            <button
+              onClick={onNavigateAdd}
+              className="px-6 py-3 min-h-touch bg-black dark:bg-white text-white dark:text-black font-medium rounded hover:bg-gray-800 dark:hover:bg-gray-200 focus-visible:outline-none focus-visible:ring focus-visible:ring-offset-2 focus-visible:ring-black dark:focus-visible:ring-white"
+            >
+              Ajouter ce titre à la base
+            </button>
+          </div>
         )}
 
         {!isLoading && results.length > 0 && (
           <div>
-            <p className="text-sm text-gray-700 dark:text-gray-300 mb-4" aria-hidden="true">
+            <p
+              className="text-sm text-gray-700 dark:text-gray-300 mb-4"
+              aria-hidden="true"
+            >
               {results.length} résultat{results.length > 1 ? 's' : ''}
             </p>
             {results.map((content) => (
@@ -198,11 +259,67 @@ export default function SearchPage({ announce }) {
                 content={content}
                 adStatuses={content.ad_status || []}
                 onValidated={handleValidated}
+                onViewDetail={onViewDetail}
               />
             ))}
           </div>
         )}
       </section>
+
+      {/* Platform sections — only shown when not searching */}
+      {showPlatformSections && (
+        <>
+          {canalContents.length > 0 && (
+            <section aria-labelledby="canal-section-title" className="mb-12">
+              <div className="flex items-baseline justify-between gap-4 mb-4 flex-wrap">
+                <h2 id="canal-section-title" className="text-xl font-bold">
+                  Canal+ — Audiodescription disponible
+                </h2>
+                <button
+                  onClick={() => onViewPlatform('canal')}
+                  className="text-sm font-medium underline hover:no-underline focus-visible:outline-none focus-visible:ring focus-visible:ring-offset-2 focus-visible:ring-black dark:focus-visible:ring-white"
+                >
+                  Voir tous les contenus →
+                </button>
+              </div>
+              <ul className="space-y-2">
+                {canalContents.map((content) => (
+                  <PlatformMiniCard
+                    key={content.id}
+                    content={content}
+                    onViewDetail={onViewDetail}
+                  />
+                ))}
+              </ul>
+            </section>
+          )}
+
+          {netflixContents.length > 0 && (
+            <section aria-labelledby="netflix-section-title" className="mb-12">
+              <div className="flex items-baseline justify-between gap-4 mb-4 flex-wrap">
+                <h2 id="netflix-section-title" className="text-xl font-bold">
+                  Netflix — Audiodescription disponible
+                </h2>
+                <button
+                  onClick={() => onViewPlatform('netflix')}
+                  className="text-sm font-medium underline hover:no-underline focus-visible:outline-none focus-visible:ring focus-visible:ring-offset-2 focus-visible:ring-black dark:focus-visible:ring-white"
+                >
+                  Voir tous les contenus →
+                </button>
+              </div>
+              <ul className="space-y-2">
+                {netflixContents.map((content) => (
+                  <PlatformMiniCard
+                    key={content.id}
+                    content={content}
+                    onViewDetail={onViewDetail}
+                  />
+                ))}
+              </ul>
+            </section>
+          )}
+        </>
+      )}
 
       <section aria-label="Ajouts récents de la communauté">
         <h2 className="text-xl font-bold mb-4">Ajouts récents de la communauté</h2>
@@ -223,7 +340,9 @@ export default function SearchPage({ announce }) {
                   {contrib.contents?.year ? ` (${contrib.contents.year})` : ''}
                 </span>{' '}
                 — Audiodescription signalée sur{' '}
-                <span className="font-medium">{contrib.platform}</span>{' '}
+                <span className="font-medium">
+                  {PLATFORM_LABELS[contrib.platform] || contrib.platform}
+                </span>{' '}
                 — {timeAgo(contrib.submitted_at)}
               </li>
             ))}

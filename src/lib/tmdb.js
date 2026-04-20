@@ -1,5 +1,6 @@
 const TMDB_BASE = 'https://api.themoviedb.org/3'
-const TMDB_IMAGE_BASE = 'https://image.tmdb.org/t/p/w92'
+const TMDB_IMAGE_THUMB = 'https://image.tmdb.org/t/p/w92'
+const TMDB_IMAGE_MEDIUM = 'https://image.tmdb.org/t/p/w185'
 
 function apiKey() {
   return import.meta.env.VITE_TMDB_API_KEY
@@ -11,8 +12,9 @@ function mapResult(r) {
     title: r.title || r.name || '',
     year: (r.release_date || r.first_air_date || '').slice(0, 4),
     type: r.media_type,
-    posterPath: r.poster_path ? `${TMDB_IMAGE_BASE}${r.poster_path}` : null,
+    posterPath: r.poster_path ? `${TMDB_IMAGE_THUMB}${r.poster_path}` : null,
     genreIds: r.genre_ids || [],
+    synopsis: r.overview || '',
   }
 }
 
@@ -66,10 +68,9 @@ export async function getTmdbDetails(tmdbId, mediaType) {
       title: r.title || r.name || '',
       year: (r.release_date || r.first_air_date || '').slice(0, 4),
       type: mediaType,
-      genre:
-        r.genres && r.genres.length > 0 ? r.genres.map((g) => g.name).join(', ') : null,
-      posterPath: r.poster_path ? `${TMDB_IMAGE_BASE}${r.poster_path}` : null,
-      overview: r.overview || '',
+      genre: r.genres && r.genres.length > 0 ? r.genres.map((g) => g.name).join(', ') : null,
+      posterPath: r.poster_path ? `${TMDB_IMAGE_MEDIUM}${r.poster_path}` : null,
+      synopsis: r.overview || '',
     }
 
     return { data, error: null }

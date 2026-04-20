@@ -1,26 +1,54 @@
 import { useCallback, useRef, useState } from 'react'
 import SearchPage from './components/SearchPage.jsx'
 import AddTitlePage from './components/AddTitlePage.jsx'
+import ContentDetailPage from './components/ContentDetailPage.jsx'
+import PlatformPage from './components/PlatformPage.jsx'
+import { PLATFORM_LABELS } from './lib/platforms.js'
 
 export default function App() {
   const [page, setPage] = useState('search')
+  const [selectedContent, setSelectedContent] = useState(null)
+  const [selectedPlatform, setSelectedPlatform] = useState(null)
   const [announcement, setAnnouncement] = useState('')
+  const [toast, setToast] = useState('')
 
   const mainRef = useRef(null)
+  const toastTimerRef = useRef(null)
 
   const announce = useCallback((msg) => {
-    // Clear first, then set — forces screen readers to announce even repeated strings
     setAnnouncement('')
     requestAnimationFrame(() => setAnnouncement(msg))
   }, [])
 
-  function navigate(newPage) {
-    setPage(newPage)
-    const label = newPage === 'search' ? 'Rechercher un titre' : 'Ajouter un titre'
-    announce(`Navigation vers : ${label}`)
+  const showToast = useCallback((msg) => {
+    setToast('')
     requestAnimationFrame(() => {
-      mainRef.current?.focus()
+      setToast(msg)
+      clearTimeout(toastTimerRef.current)
+      toastTimerRef.current = setTimeout(() => setToast(''), 5000)
     })
+  }, [])
+
+  function navigate(newPage, params = {}) {
+    if (params.content !== undefined) setSelectedContent(params.content)
+    if (params.platform !== undefined) setSelectedPlatform(params.platform)
+    setPage(newPage)
+
+    const labels = {
+      search: "Accueil — Rechercher un titre",
+      add: 'Ajouter un titre',
+      content: params.content ? `Détail : ${params.content.title}` : 'Détail du contenu',
+      platform: params.platform
+        ? `Tous les contenus sur ${PLATFORM_LABELS[params.platform] || params.platform}`
+        : 'Contenus de la plateforme',
+    }
+    announce(`Navigation vers : ${labels[newPage] || newPage}`)
+    requestAnimationFrame(() => mainRef.current?.focus())
+  }
+
+  function handleAddSuccess() {
+    navigate('search')
+    showToast('Le titre a été ajouté avec succès. Merci pour votre contribution !')
   }
 
   return (
@@ -30,7 +58,7 @@ export default function App() {
         Aller au contenu principal
       </a>
 
-      {/* Global aria-live announcer — survives page changes because it lives here */}
+      {/* Global aria-live announcer */}
       <div
         role="status"
         aria-live="polite"
@@ -41,45 +69,52 @@ export default function App() {
         {announcement}
       </div>
 
+      {/* Toast announcer — always in DOM so ARIA picks up changes */}
+      <div
+        role="status"
+        aria-live="polite"
+        aria-atomic="true"
+        className="sr-only"
+        id="toast-announcer"
+      >
+        {toast}
+      </div>
+
+      {/* Visual toast */}
+      {toast && (
+        <div
+          aria-hidden="true"
+          className="fixed bottom-6 inset-x-4 sm:inset-x-auto sm:left-1/2 sm:-translate-x-1/2 z-50 sm:max-w-md px-6 py-4 bg-black dark:bg-white text-white dark:text-black rounded-xl shadow-xl text-sm font-medium text-center"
+        >
+          {toast}
+        </div>
+      )}
+
       <header className="border-b-2 border-black dark:border-white">
         <div className="max-w-2xl mx-auto px-4 py-4">
-          <h1 className="text-2xl font-bold mb-4">
-            ADispo{' '}
-            <span className="text-base font-normal text-gray-700 dark:text-gray-300">
-              — Audiodescription sur les plateformes de streaming
-            </span>
-          </h1>
+          <div className="flex items-center justify-between gap-4 flex-wrap">
+            <h1 className="text-2xl font-bold">
+              <button
+                onClick={() => navigate('search')}
+                className="hover:underline focus-visible:outline-none focus-visible:ring focus-visible:ring-offset-2 focus-visible:ring-black dark:focus-visible:ring-white rounded"
+              >
+                ADispo
+              </button>
+              {' '}
+              <span className="text-base font-normal text-gray-700 dark:text-gray-300">
+                — Audiodescription sur les plateformes de streaming
+              </span>
+            </h1>
 
-          <nav aria-label="Navigation principale">
-            <ul role="list" className="flex gap-2 flex-wrap">
-              <li>
-                <button
-                  onClick={() => navigate('search')}
-                  aria-current={page === 'search' ? 'page' : undefined}
-                  className={`px-4 py-2 min-h-touch font-medium rounded border-2 focus-visible:outline-none focus-visible:ring focus-visible:ring-offset-2 focus-visible:ring-black dark:focus-visible:ring-white transition-colors motion-safe:transition-colors ${
-                    page === 'search'
-                      ? 'bg-black dark:bg-white text-white dark:text-black border-black dark:border-white'
-                      : 'border-black dark:border-white hover:bg-gray-100 dark:hover:bg-gray-800'
-                  }`}
-                >
-                  Rechercher un titre
-                </button>
-              </li>
-              <li>
-                <button
-                  onClick={() => navigate('add')}
-                  aria-current={page === 'add' ? 'page' : undefined}
-                  className={`px-4 py-2 min-h-touch font-medium rounded border-2 focus-visible:outline-none focus-visible:ring focus-visible:ring-offset-2 focus-visible:ring-black dark:focus-visible:ring-white transition-colors motion-safe:transition-colors ${
-                    page === 'add'
-                      ? 'bg-black dark:bg-white text-white dark:text-black border-black dark:border-white'
-                      : 'border-black dark:border-white hover:bg-gray-100 dark:hover:bg-gray-800'
-                  }`}
-                >
-                  Ajouter un titre
-                </button>
-              </li>
-            </ul>
-          </nav>
+            {page !== 'search' && (
+              <button
+                onClick={() => navigate('search')}
+                className="flex items-center gap-2 px-4 py-2 min-h-touch text-sm font-medium border-2 border-black dark:border-white rounded hover:bg-gray-100 dark:hover:bg-gray-800 focus-visible:outline-none focus-visible:ring focus-visible:ring-offset-2 focus-visible:ring-black dark:focus-visible:ring-white"
+              >
+                ← Accueil
+              </button>
+            )}
+          </div>
         </div>
       </header>
 
@@ -89,10 +124,34 @@ export default function App() {
         ref={mainRef}
         className="max-w-2xl mx-auto px-4 py-8 focus-visible:outline-none"
       >
-        {page === 'search' ? (
-          <SearchPage announce={announce} />
-        ) : (
-          <AddTitlePage announce={announce} />
+        {page === 'search' && (
+          <SearchPage
+            announce={announce}
+            onViewDetail={(content) => navigate('content', { content })}
+            onViewPlatform={(platform) => navigate('platform', { platform })}
+            onNavigateAdd={() => navigate('add')}
+          />
+        )}
+        {page === 'add' && (
+          <AddTitlePage
+            announce={announce}
+            onSubmitSuccess={handleAddSuccess}
+          />
+        )}
+        {page === 'content' && selectedContent && (
+          <ContentDetailPage
+            content={selectedContent}
+            announce={announce}
+            onBack={() => navigate('search')}
+          />
+        )}
+        {page === 'platform' && selectedPlatform && (
+          <PlatformPage
+            platform={selectedPlatform}
+            announce={announce}
+            onBack={() => navigate('search')}
+            onViewDetail={(content) => navigate('content', { content })}
+          />
         )}
       </main>
 

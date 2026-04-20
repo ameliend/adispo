@@ -1,33 +1,28 @@
-import { useEffect, useRef, useState, useCallback } from 'react'
-import { searchTmdb } from '../lib/tmdb.js'
-import { submitNewTitle } from '../lib/supabase.js'
+import { useEffect, useRef, useState } from 'react'
+import { searchTmdb, getTmdbDetails } from '../lib/tmdb.js'
+import { submitNewTitle, checkContentExists } from '../lib/supabase.js'
+import { PLATFORMS, PLATFORM_LABELS } from '../lib/platforms.js'
 
-const PLATFORMS = [
-  { value: 'canal', label: 'Canal+' },
-  { value: 'netflix', label: 'Netflix' },
-  { value: 'disney', label: 'Disney+' },
-  { value: 'prime', label: 'Prime Video' },
-  { value: 'apple', label: 'Apple TV+' },
-]
-
-export default function AddTitlePage({ announce }) {
+export default function AddTitlePage({ announce, onSubmitSuccess }) {
   const [step, setStep] = useState(1)
   const [tmdbQuery, setTmdbQuery] = useState('')
   const [tmdbResults, setTmdbResults] = useState([])
   const [tmdbStatusMsg, setTmdbStatusMsg] = useState('')
   const [selectedTitle, setSelectedTitle] = useState(null)
   const [selectedPlatforms, setSelectedPlatforms] = useState([])
+  const [platformLinks, setPlatformLinks] = useState({})
   const [isSubmitting, setIsSubmitting] = useState(false)
+  const [isFetchingDetails, setIsFetchingDetails] = useState(false)
   const [submitError, setSubmitError] = useState('')
+  const [existingPlatforms, setExistingPlatforms] = useState([])
+  const [checkingDuplicates, setCheckingDuplicates] = useState(false)
 
   const step1HeadingRef = useRef(null)
   const step2HeadingRef = useRef(null)
   const step3HeadingRef = useRef(null)
-  const tmdbStatusRef = useRef(null)
 
   const headingRefs = [null, step1HeadingRef, step2HeadingRef, step3HeadingRef]
 
-  // Focus heading when step changes
   useEffect(() => {
     headingRefs[step]?.current?.focus()
   }, [step]) // eslint-disable-line react-hooks/exhaustive-deps
@@ -61,7 +56,32 @@ export default function AddTitlePage({ announce }) {
     return () => clearTimeout(timer)
   }, [tmdbQuery])
 
-  function goToStep2() {
+  // Check for duplicates when entering step 3
+  useEffect(() => {
+    if (step !== 3 || !selectedTitle) return
+    setCheckingDuplicates(true)
+    checkContentExists(selectedTitle.tmdbId, selectedPlatforms).then(
+      ({ existingPlatforms: ep }) => {
+        setExistingPlatforms(ep)
+        setCheckingDuplicates(false)
+      }
+    )
+  }, [step]) // eslint-disable-line react-hooks/exhaustive-deps
+
+  async function goToStep2() {
+    setIsFetchingDetails(true)
+    if (selectedTitle?.tmdbId && selectedTitle?.type) {
+      const { data } = await getTmdbDetails(selectedTitle.tmdbId, selectedTitle.type)
+      if (data) {
+        setSelectedTitle((prev) => ({
+          ...prev,
+          genre: data.genre || prev.genre || null,
+          synopsis: data.synopsis || prev.synopsis || '',
+          posterPath: data.posterPath || prev.posterPath,
+        }))
+      }
+    }
+    setIsFetchingDetails(false)
     setStep(2)
     announce('Étape 2 sur 3 : sélection des plateformes.')
   }
@@ -91,7 +111,7 @@ export default function AddTitlePage({ announce }) {
     setIsSubmitting(true)
     setSubmitError('')
 
-    const { error } = await submitNewTitle(selectedTitle, selectedPlatforms)
+    const { error } = await submitNewTitle(selectedTitle, selectedPlatforms, platformLinks)
 
     setIsSubmitting(false)
 
@@ -100,20 +120,10 @@ export default function AddTitlePage({ announce }) {
       return
     }
 
-    announce(
-      'Merci. Votre contribution a été envoyée et sera examinée par notre équipe.'
-    )
-
-    // Reset form
-    setStep(1)
-    setTmdbQuery('')
-    setTmdbResults([])
-    setSelectedTitle(null)
-    setSelectedPlatforms([])
-    setTmdbStatusMsg('')
+    onSubmitSuccess()
   }
 
-  const platformLabel = (val) => PLATFORMS.find((p) => p.value === val)?.label || val
+  const platformLabel = (val) => PLATFORM_LABELS[val] || val
 
   return (
     <>
@@ -207,18 +217,15 @@ export default function AddTitlePage({ announce }) {
           <div className="flex items-center gap-4">
             <button
               onClick={goToStep2}
-              disabled={!selectedTitle}
-              aria-disabled={!selectedTitle}
+              disabled={!selectedTitle || isFetchingDetails}
+              aria-disabled={!selectedTitle || isFetchingDetails}
               aria-describedby={!selectedTitle ? 'step1-hint' : undefined}
               className="px-6 py-3 min-h-touch bg-black dark:bg-white text-white dark:text-black font-medium rounded hover:bg-gray-800 dark:hover:bg-gray-200 focus-visible:outline-none focus-visible:ring focus-visible:ring-offset-2 focus-visible:ring-black dark:focus-visible:ring-white disabled:opacity-50 disabled:cursor-not-allowed"
             >
-              Suivant
+              {isFetchingDetails ? 'Chargement…' : 'Suivant'}
             </button>
             {!selectedTitle && (
-              <span
-                id="step1-hint"
-                className="text-sm text-gray-600 dark:text-gray-400"
-              >
+              <span id="step1-hint" className="text-sm text-gray-600 dark:text-gray-400">
                 Sélectionnez un titre pour continuer
               </span>
             )}
@@ -246,22 +253,51 @@ export default function AddTitlePage({ announce }) {
             <legend className="font-medium mb-3 sr-only">
               Sélectionnez les plateformes avec audiodescription
             </legend>
-            <div className="space-y-2">
-              {PLATFORMS.map((p) => (
-                <label
-                  key={p.value}
-                  className="flex items-center gap-3 p-3 border-2 rounded cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-800 border-gray-300 dark:border-gray-600 has-[:checked]:border-black dark:has-[:checked]:border-white"
-                >
-                  <input
-                    type="checkbox"
-                    value={p.value}
-                    checked={selectedPlatforms.includes(p.value)}
-                    onChange={() => togglePlatform(p.value)}
-                    className="flex-shrink-0"
-                  />
-                  <span className="font-medium">{p.label}</span>
-                </label>
-              ))}
+            <div className="space-y-3">
+              {PLATFORMS.map((p) => {
+                const isChecked = selectedPlatforms.includes(p.value)
+                return (
+                  <div key={p.value}>
+                    <label className="flex items-center gap-3 p-3 border-2 rounded cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-800 border-gray-300 dark:border-gray-600 has-[:checked]:border-black dark:has-[:checked]:border-white">
+                      <input
+                        type="checkbox"
+                        value={p.value}
+                        checked={isChecked}
+                        onChange={() => togglePlatform(p.value)}
+                        className="flex-shrink-0"
+                      />
+                      <span className="font-medium">{p.label}</span>
+                    </label>
+
+                    {isChecked && (
+                      <div className="ml-4 mt-2 mb-1">
+                        <label
+                          htmlFor={`link-${p.value}`}
+                          className="block mb-1 text-sm font-medium"
+                        >
+                          Lien vers le contenu sur {p.label}{' '}
+                          <span className="font-normal text-gray-600 dark:text-gray-400">
+                            (optionnel)
+                          </span>
+                        </label>
+                        <input
+                          id={`link-${p.value}`}
+                          type="url"
+                          value={platformLinks[p.value] || ''}
+                          onChange={(e) =>
+                            setPlatformLinks((prev) => ({
+                              ...prev,
+                              [p.value]: e.target.value,
+                            }))
+                          }
+                          placeholder="https://…"
+                          className="w-full px-3 py-2 min-h-touch text-sm border-2 border-gray-300 dark:border-gray-600 rounded bg-white dark:bg-gray-900 focus-visible:outline-none focus-visible:ring focus-visible:ring-offset-2 focus-visible:ring-black dark:focus-visible:ring-white"
+                        />
+                      </div>
+                    )}
+                  </div>
+                )
+              })}
             </div>
           </fieldset>
 
@@ -282,10 +318,7 @@ export default function AddTitlePage({ announce }) {
               Précédent
             </button>
             {selectedPlatforms.length === 0 && (
-              <span
-                id="step2-hint"
-                className="text-sm text-gray-600 dark:text-gray-400"
-              >
+              <span id="step2-hint" className="text-sm text-gray-600 dark:text-gray-400">
                 Cochez au moins une plateforme pour continuer
               </span>
             )}
@@ -307,13 +340,26 @@ export default function AddTitlePage({ announce }) {
             Confirmez votre contribution
           </p>
 
+          {!checkingDuplicates && existingPlatforms.length > 0 && (
+            <div
+              role="note"
+              className="mb-4 p-3 bg-yellow-50 dark:bg-yellow-950 border border-yellow-600 rounded text-yellow-900 dark:text-yellow-100 text-sm"
+            >
+              <strong>Information :</strong> Ce titre est déjà référencé dans notre base pour{' '}
+              {existingPlatforms.map(platformLabel).join(' et ')}. Votre contribution
+              permettra de confirmer que l'audiodescription est toujours disponible.
+            </div>
+          )}
+
           <div
             className="mb-6 p-4 border-2 border-gray-300 dark:border-gray-600 rounded"
             aria-label={`Résumé : audiodescription disponible sur ${selectedPlatforms.map(platformLabel).join(' et ')} pour ${selectedTitle?.title}${selectedTitle?.year ? ` (${selectedTitle.year})` : ''}`}
           >
             <dl className="space-y-3">
               <div>
-                <dt className="text-sm font-medium text-gray-700 dark:text-gray-300">Titre</dt>
+                <dt className="text-sm font-medium text-gray-700 dark:text-gray-300">
+                  Titre
+                </dt>
                 <dd className="text-base font-semibold">
                   {selectedTitle?.title}
                   {selectedTitle?.year ? ` (${selectedTitle.year})` : ''}
@@ -328,8 +374,27 @@ export default function AddTitlePage({ announce }) {
                 <dt className="text-sm font-medium text-gray-700 dark:text-gray-300">
                   Plateformes avec audiodescription
                 </dt>
-                <dd className="text-base font-semibold">
-                  {selectedPlatforms.map(platformLabel).join(', ')}
+                <dd>
+                  <ul className="space-y-1 mt-1">
+                    {selectedPlatforms.map((p) => (
+                      <li key={p} className="text-base font-semibold">
+                        {platformLabel(p)}
+                        {platformLinks[p] && (
+                          <span className="ml-2 font-normal text-sm text-gray-600 dark:text-gray-400">
+                            —{' '}
+                            <a
+                              href={platformLinks[p]}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="underline"
+                            >
+                              {platformLinks[p]}
+                            </a>
+                          </span>
+                        )}
+                      </li>
+                    ))}
+                  </ul>
                 </dd>
               </div>
             </dl>
