@@ -1,5 +1,5 @@
 export const PLATFORMS = [
-  { value: 'canal', label: 'Canal+' },
+  { value: 'canal', label: 'CANAL+' },
   { value: 'netflix', label: 'Netflix' },
   { value: 'disney', label: 'Disney+' },
   { value: 'prime', label: 'Prime Video' },
@@ -7,7 +7,7 @@ export const PLATFORMS = [
 ]
 
 export const PLATFORM_LABELS = {
-  canal: 'Canal+',
+  canal: 'CANAL+',
   netflix: 'Netflix',
   disney: 'Disney+',
   prime: 'Prime Video',
