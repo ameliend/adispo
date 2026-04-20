@@ -126,6 +126,7 @@ export default function App() {
             announce={announce}
             onViewDetail={(content) => navigate('content', { content })}
             onNavigateAdd={(title) => navigate('add', { initialTitle: title || null })}
+            onBack={() => navigate('home')}
           />
         )}
         {page === 'add' && (
