@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { getContentsByPlatform } from '../lib/supabase.js'
 import { PLATFORM_LABELS } from '../lib/platforms.js'
 import TrustBadge from './TrustBadge.jsx'
@@ -7,6 +7,7 @@ import { posterUrl } from '../lib/tmdb.js'
 export default function PlatformPage({ platform, onBack, onViewDetail }) {
   const [contents, setContents] = useState([])
   const [isLoading, setIsLoading] = useState(true)
+  const [genre, setGenre] = useState('')
 
   const platformName = PLATFORM_LABELS[platform] || platform
 
@@ -17,6 +18,13 @@ export default function PlatformPage({ platform, onBack, onViewDetail }) {
       setIsLoading(false)
     })
   }, [platform])
+
+  const genres = useMemo(() => {
+    const set = new Set(contents.map(c => c.genre).filter(Boolean))
+    return [...set].sort((a, b) => a.localeCompare(b, 'fr'))
+  }, [contents])
+
+  const filtered = genre ? contents.filter(c => c.genre === genre) : contents
 
   return (
     <section aria-labelledby="platform-page-title">
@@ -44,14 +52,31 @@ export default function PlatformPage({ platform, onBack, onViewDetail }) {
         <p className="text-base">Aucun contenu disponible pour cette plateforme.</p>
       ) : (
         <>
-          <p
-            className="text-sm text-gray-700 dark:text-gray-300 mb-4"
-            aria-hidden="true"
-          >
-            {contents.length} titre{contents.length > 1 ? 's' : ''}
+          {genres.length > 0 && (
+            <div className="mb-4">
+              <label htmlFor="genre-filter" className="text-sm font-medium mr-2">
+                Filtrer par genre
+              </label>
+              <select
+                id="genre-filter"
+                value={genre}
+                onChange={e => setGenre(e.target.value)}
+                className="text-sm border-2 border-black dark:border-white rounded px-2 py-1 bg-white dark:bg-black focus-visible:outline-none focus-visible:ring focus-visible:ring-offset-2 focus-visible:ring-black dark:focus-visible:ring-white"
+              >
+                <option value="">Tous les genres</option>
+                {genres.map(g => (
+                  <option key={g} value={g}>{g}</option>
+                ))}
+              </select>
+            </div>
+          )}
+
+          <p className="text-sm text-gray-700 dark:text-gray-300 mb-4" aria-hidden="true">
+            {filtered.length} titre{filtered.length > 1 ? 's' : ''}
           </p>
+
           <ul className="space-y-2">
-            {contents.map((content) => {
+            {filtered.map((content) => {
               const adStatus = content.ad_status?.[0]
               return (
                 <li key={content.id}>
