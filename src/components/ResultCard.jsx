@@ -53,7 +53,9 @@ export default function ResultCard({ content, adStatuses, onValidated, onViewDet
           />
         )}
 
-        <div className="flex-1 min-w-0">
+        <div className="flex-1 min-w-0 flex flex-col">
+          <div className="flex items-start justify-between gap-2 mb-1">
+            <div className="flex-1 min-w-0">
           <h2 id={`title-${content.id}`} className="text-xl font-bold mb-1">
             {onViewDetail ? (
               <button
@@ -71,6 +73,12 @@ export default function ResultCard({ content, adStatuses, onValidated, onViewDet
               </span>
             )}
           </h2>
+            </div>
+            {(() => {
+              const maxCount = Math.max(...(adStatuses || []).map(s => s.validation_count ?? 0), 0)
+              return maxCount > 0 ? <TrustBadge validationCount={maxCount} /> : null
+            })()}
+          </div>
 
           <p className="text-sm text-gray-700 dark:text-gray-300 mb-3">
             {content.type === 'tv' ? 'Série' : content.type === 'movie' ? 'Film' : ''}
@@ -98,7 +106,6 @@ export default function ResultCard({ content, adStatuses, onValidated, onViewDet
                     <div className="flex flex-wrap items-center gap-3">
                       <span className="font-semibold min-w-[8rem]">{platformName}</span>
                       <span className="text-sm">{label}</span>
-                      {count > 0 && <TrustBadge validationCount={count} />}
                     </div>
 
                     {count > 0 && (
