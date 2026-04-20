@@ -97,12 +97,7 @@ export default function App() {
         <div className="max-w-2xl mx-auto px-4 py-4">
           <div className="flex items-center justify-between gap-4 flex-wrap">
             <h1 className="text-2xl font-bold">
-              <button
-                onClick={() => navigate('home')}
-                className="hover:underline focus-visible:outline-none focus-visible:ring focus-visible:ring-offset-2 focus-visible:ring-black dark:focus-visible:ring-white rounded"
-              >
-                ADispo
-              </button>
+              ADispo
               {' '}
               <span className="text-base font-normal text-gray-700 dark:text-gray-300">
                 — Audiodescription sur les plateformes de streaming
