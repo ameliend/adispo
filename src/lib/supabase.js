@@ -291,6 +291,61 @@ export async function getRandomByPlatform(platform, limit = 10) {
   }
 }
 
+// ── Auth ─────────────────────────────────────────────────────────────────────
+
+export async function signUp(email, password) {
+  const { data, error } = await supabase.auth.signUp({ email, password })
+  return { data, error }
+}
+
+export async function signIn(email, password) {
+  const { data, error } = await supabase.auth.signInWithPassword({ email, password })
+  return { data, error }
+}
+
+export async function signOut() {
+  const { error } = await supabase.auth.signOut()
+  return { error }
+}
+
+export async function verifyOtp(tokenHash, type) {
+  const { data, error } = await supabase.auth.verifyOtp({ token_hash: tokenHash, type })
+  return { data, error }
+}
+
+// ── Playlist ──────────────────────────────────────────────────────────────────
+
+export async function getPlaylist(userId) {
+  const { data, error } = await supabase
+    .from('playlists')
+    .select(`
+      id, added_at,
+      contents (id, tmdb_id, title, year, genre, type, poster_path,
+        ad_status (id, platform, status, trust_level, validation_count, lien))
+    `)
+    .eq('user_id', userId)
+    .order('added_at', { ascending: false })
+  return { data, error }
+}
+
+export async function addToPlaylist(userId, contentId) {
+  const { data, error } = await supabase
+    .from('playlists')
+    .insert({ user_id: userId, content_id: contentId })
+    .select()
+    .single()
+  return { data, error }
+}
+
+export async function removeFromPlaylist(userId, contentId) {
+  const { error } = await supabase
+    .from('playlists')
+    .delete()
+    .eq('user_id', userId)
+    .eq('content_id', contentId)
+  return { error }
+}
+
 export async function getContentsByPlatform(platform) {
   try {
     const { data: adData, error } = await supabase

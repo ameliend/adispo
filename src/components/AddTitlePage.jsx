@@ -7,9 +7,15 @@ import { PLATFORMS, PLATFORM_LABELS } from '../lib/platforms.js'
 export default function AddTitlePage() {
   const navigate = useNavigate()
   const location = useLocation()
-  const { announce, showToast } = useOutletContext()
+  const { announce, showToast, user, authLoading } = useOutletContext()
   const initialTitle = location.state?.initialTitle || null
   useEffect(() => { document.title = 'Ajouter un titre — ADispo' }, [])
+
+  useEffect(() => {
+    if (!authLoading && !user) {
+      navigate('/connexion', { state: { from: '/ajouter' }, replace: true })
+    }
+  }, [authLoading, user, navigate])
 
   const [step, setStep] = useState(initialTitle ? 2 : 1)
   const [tmdbQuery, setTmdbQuery] = useState('')
@@ -132,6 +138,9 @@ export default function AddTitlePage() {
   }
 
   const platformLabel = (val) => PLATFORM_LABELS[val] || val
+
+  if (authLoading) return <p className="text-base text-gray-700 dark:text-gray-300">Chargement…</p>
+  if (!user) return null
 
   return (
     <>
