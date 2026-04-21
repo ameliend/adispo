@@ -204,8 +204,8 @@ export default function SearchPage() {
                     <span>
                       <span className="font-medium">{r.title}</span>
                       {r.year && (
-                        <span aria-hidden="true" className="text-sm text-gray-700 dark:text-gray-300 ml-2">
-                          ({r.year})
+                        <span className="text-sm text-gray-700 dark:text-gray-300 ml-2">
+                          <span aria-hidden="true">(</span>{r.year}<span aria-hidden="true">)</span>
                         </span>
                       )}
                       <span className="text-sm text-gray-600 dark:text-gray-400 ml-2">
@@ -338,8 +338,8 @@ export default function SearchPage() {
                           <div className="min-w-0">
                             <span className="font-medium truncate block">{content.title}</span>
                             {content.year && (
-                              <span aria-hidden="true" className="text-sm text-gray-700 dark:text-gray-300">
-                                ({content.year})
+                              <span className="text-sm text-gray-700 dark:text-gray-300">
+                                <span aria-hidden="true">(</span>{content.year}<span aria-hidden="true">)</span>
                               </span>
                             )}
                             {content.genre && (
