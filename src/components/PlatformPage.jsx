@@ -1,10 +1,13 @@
 import { useEffect, useMemo, useState } from 'react'
+import { useNavigate, useParams } from 'react-router-dom'
 import { getContentsByPlatform } from '../lib/supabase.js'
 import { PLATFORM_LABELS } from '../lib/platforms.js'
 import TrustBadge from './TrustBadge.jsx'
 import { posterUrl } from '../lib/tmdb.js'
 
-export default function PlatformPage({ platform, onBack, onViewDetail }) {
+export default function PlatformPage() {
+  const navigate = useNavigate()
+  const { platform } = useParams()
   const [contents, setContents] = useState([])
   const [isLoading, setIsLoading] = useState(true)
   const [genre, setGenre] = useState('')
@@ -12,6 +15,7 @@ export default function PlatformPage({ platform, onBack, onViewDetail }) {
   const platformName = PLATFORM_LABELS[platform] || platform
 
   useEffect(() => {
+    document.title = `${platformName} — ADispo`
     setIsLoading(true)
     getContentsByPlatform(platform).then(({ data }) => {
       setContents(data || [])
@@ -29,7 +33,7 @@ export default function PlatformPage({ platform, onBack, onViewDetail }) {
   return (
     <section aria-labelledby="platform-page-title">
       <button
-        onClick={onBack}
+        onClick={() => navigate(-1)}
         className="mb-6 text-sm font-medium underline hover:no-underline focus-visible:outline-none focus-visible:ring focus-visible:ring-offset-2 focus-visible:ring-black dark:focus-visible:ring-white"
       >
         ← Retour
@@ -81,7 +85,7 @@ export default function PlatformPage({ platform, onBack, onViewDetail }) {
               return (
                 <li key={content.id}>
                   <button
-                    onClick={() => onViewDetail(content)}
+                    onClick={() => navigate(`/contenu/${content.id}`, { state: { content } })}
                     className="w-full text-left p-3 border-2 border-gray-200 dark:border-gray-700 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-800 hover:border-black dark:hover:border-white focus-visible:outline-none focus-visible:ring focus-visible:ring-offset-2 focus-visible:ring-black dark:focus-visible:ring-white"
                     aria-label={`Voir le détail de ${content.title}${content.year ? ` (${content.year})` : ''}`}
                   >

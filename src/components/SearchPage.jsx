@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
+import { useNavigate, useLocation, useOutletContext } from 'react-router-dom'
 import { searchTitles, getContentByTmdbId } from '../lib/supabase.js'
 import { searchTmdb } from '../lib/tmdb.js'
 import { PLATFORM_LABELS } from '../lib/platforms.js'
@@ -6,7 +7,7 @@ import ResultCard from './ResultCard.jsx'
 
 const PLATFORMS = [
   { value: '', label: 'Toutes les plateformes' },
-  { value: 'canal', label: 'Canal+' },
+  { value: 'canal', label: 'CANAL+' },
   { value: 'netflix', label: 'Netflix' },
   { value: 'disney', label: 'Disney+' },
   { value: 'prime', label: 'Prime Video' },
@@ -22,13 +23,13 @@ const GENRES = [
   { value: 'Comédie', label: 'Comédie' },
 ]
 
-export default function SearchPage({
-  announce,
-  onViewDetail,
-  onNavigateAdd,
-  onBack,
-  initialTitle,
-}) {
+export default function SearchPage() {
+  const navigate = useNavigate()
+  const location = useLocation()
+  const { announce } = useOutletContext()
+  const initialTitle = location.state?.initialTitle || ''
+  useEffect(() => { document.title = 'Rechercher — ADispo' }, [])
+
   // TMDB autocomplete
   const [tmdbQuery, setTmdbQuery] = useState('')
   const [tmdbResults, setTmdbResults] = useState([])
@@ -116,7 +117,7 @@ export default function SearchPage({
     const { data: content } = await getContentByTmdbId(result.tmdbId)
 
     if (content && content.ad_status && content.ad_status.length > 0) {
-      onViewDetail(content)
+      navigate(`/contenu/${content.id}`, { state: { content } })
     } else {
       setDbStatus('notfound')
     }
@@ -127,7 +128,7 @@ export default function SearchPage({
   return (
     <>
       <button
-        onClick={onBack}
+        onClick={() => navigate(-1)}
         className="mb-6 text-sm font-medium underline hover:no-underline focus-visible:outline-none focus-visible:ring focus-visible:ring-offset-2 focus-visible:ring-black dark:focus-visible:ring-white"
       >
         ← Retour
@@ -234,7 +235,7 @@ export default function SearchPage({
               Ajoutez-la.
             </p>
             <button
-              onClick={() => onNavigateAdd(selectedTmdb)}
+              onClick={() => navigate('/ajouter', { state: { initialTitle: selectedTmdb?.title || null } })}
               className="px-6 py-3 min-h-touch bg-black dark:bg-white text-white dark:text-black font-medium rounded hover:bg-gray-800 dark:hover:bg-gray-200 focus-visible:outline-none focus-visible:ring focus-visible:ring-offset-2 focus-visible:ring-black dark:focus-visible:ring-white"
             >
               Ajouter ce contenu
@@ -316,7 +317,7 @@ export default function SearchPage({
                 content={content}
                 adStatuses={content.ad_status || []}
                 onValidated={handleValidated}
-                onViewDetail={onViewDetail}
+                onViewDetail={(content) => navigate(`/contenu/${content.id}`, { state: { content } })}
               />
             ))}
           </div>

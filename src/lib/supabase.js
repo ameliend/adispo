@@ -176,6 +176,22 @@ export async function submitNewTitle(contentData, platforms, platformLinks = {})
   }
 }
 
+export async function getContentById(id) {
+  try {
+    const { data, error } = await supabase
+      .from('contents')
+      .select(`
+        id, tmdb_id, title, year, genre, type, synopsis, poster_path,
+        ad_status (id, platform, status, trust_level, validation_count, lien)
+      `)
+      .eq('id', id)
+      .maybeSingle()
+    return { data, error }
+  } catch (err) {
+    return { data: null, error: err }
+  }
+}
+
 export async function getContentByTmdbId(tmdbId) {
   try {
     const { data, error } = await supabase

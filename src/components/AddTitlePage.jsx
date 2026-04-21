@@ -1,9 +1,16 @@
 import { useEffect, useRef, useState } from 'react'
+import { useNavigate, useLocation, useOutletContext } from 'react-router-dom'
 import { searchTmdb, getTmdbDetails } from '../lib/tmdb.js'
 import { submitNewTitle, checkContentExists } from '../lib/supabase.js'
 import { PLATFORMS, PLATFORM_LABELS } from '../lib/platforms.js'
 
-export default function AddTitlePage({ announce, onSubmitSuccess, initialTitle }) {
+export default function AddTitlePage() {
+  const navigate = useNavigate()
+  const location = useLocation()
+  const { announce, showToast } = useOutletContext()
+  const initialTitle = location.state?.initialTitle || null
+  useEffect(() => { document.title = 'Ajouter un titre — ADispo' }, [])
+
   const [step, setStep] = useState(initialTitle ? 2 : 1)
   const [tmdbQuery, setTmdbQuery] = useState('')
   const [tmdbResults, setTmdbResults] = useState([])
@@ -120,7 +127,8 @@ export default function AddTitlePage({ announce, onSubmitSuccess, initialTitle }
       return
     }
 
-    onSubmitSuccess()
+    showToast('Le titre a été ajouté avec succès. Merci pour votre contribution !')
+    navigate('/')
   }
 
   const platformLabel = (val) => PLATFORM_LABELS[val] || val

@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react'
+import { useNavigate, Link } from 'react-router-dom'
 import { getRecentContributions, getRandomByPlatform } from '../lib/supabase.js'
 import { PLATFORM_LABELS } from '../lib/platforms.js'
 import TrustBadge from './TrustBadge.jsx'
@@ -15,16 +16,17 @@ function timeAgo(dateStr) {
   return `il y a ${days} jours`
 }
 
-function PlatformMiniCard({ content, onViewDetail }) {
+function PlatformMiniCard({ content }) {
+  const navigate = useNavigate()
   const adStatus = content.ad_status?.[0]
   return (
     <li>
       <button
-        onClick={() => onViewDetail(content)}
+        onClick={() => navigate(`/contenu/${content.id}`, { state: { content } })}
         className="w-full text-left p-3 border-2 border-gray-200 dark:border-gray-700 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-800 hover:border-black dark:hover:border-white focus-visible:outline-none focus-visible:ring focus-visible:ring-offset-2 focus-visible:ring-black dark:focus-visible:ring-white"
         aria-label={`Voir ${content.title}${content.year ? ` (${content.year})` : ''}`}
       >
-        <div className="flex items-start justify-between gap-3 flex-wrap">
+        <div className="flex items-center justify-between gap-4 flex-nowrap">
           <div className="flex items-center gap-3 min-w-0">
             {posterUrl(content.poster_path) && (
               <img
@@ -38,9 +40,9 @@ function PlatformMiniCard({ content, onViewDetail }) {
               />
             )}
             <div className="min-w-0">
-              <span className="font-medium">{content.title}</span>
+              <span className="font-medium truncate block">{content.title}</span>
               {content.year && (
-                <span className="text-sm text-gray-700 dark:text-gray-300 ml-2">
+                <span className="text-sm text-gray-700 dark:text-gray-300">
                   ({content.year})
                 </span>
               )}
@@ -52,7 +54,9 @@ function PlatformMiniCard({ content, onViewDetail }) {
             </div>
           </div>
           {adStatus && adStatus.validation_count > 0 && (
-            <TrustBadge validationCount={adStatus.validation_count} />
+            <div className="flex-shrink-0">
+              <TrustBadge validationCount={adStatus.validation_count} />
+            </div>
           )}
         </div>
       </button>
@@ -60,105 +64,79 @@ function PlatformMiniCard({ content, onViewDetail }) {
   )
 }
 
-export default function HomePage({ onNavigateSearch, onViewDetail, onViewPlatform }) {
+export default function HomePage() {
   const [recentAdditions, setRecentAdditions] = useState([])
   const [canalContents, setCanalContents] = useState([])
   const [netflixContents, setNetflixContents] = useState([])
 
   useEffect(() => {
-    getRecentContributions().then(({ data }) => {
-      if (data) setRecentAdditions(data)
-    })
-    getRandomByPlatform('canal', 10).then(({ data }) => {
-      if (data) setCanalContents(data)
-    })
-    getRandomByPlatform('netflix', 10).then(({ data }) => {
-      if (data) setNetflixContents(data)
-    })
+    document.title = 'ADispo — Audiodescription sur les plateformes de streaming'
+    getRecentContributions().then(({ data }) => { if (data) setRecentAdditions(data) })
+    getRandomByPlatform('canal', 10).then(({ data }) => { if (data) setCanalContents(data) })
+    getRandomByPlatform('netflix', 10).then(({ data }) => { if (data) setNetflixContents(data) })
   }, [])
 
   return (
     <>
-      {/* CTA recherche */}
       <div className="mb-10">
         <p className="text-base text-gray-700 dark:text-gray-300 mb-4">
           Vérifiez si l'audiodescription est disponible pour un film ou une série sur
           les grandes plateformes de streaming.
         </p>
-        <button
-          onClick={onNavigateSearch}
-          className="px-6 py-3 min-h-touch bg-black dark:bg-white text-white dark:text-black font-semibold rounded hover:bg-gray-800 dark:hover:bg-gray-200 focus-visible:outline-none focus-visible:ring focus-visible:ring-offset-2 focus-visible:ring-black dark:focus-visible:ring-white"
+        <Link
+          to="/recherche"
+          className="inline-block px-6 py-3 min-h-touch bg-black dark:bg-white text-white dark:text-black font-semibold rounded hover:bg-gray-800 dark:hover:bg-gray-200 focus-visible:outline-none focus-visible:ring focus-visible:ring-offset-2 focus-visible:ring-black dark:focus-visible:ring-white"
         >
           Rechercher un titre
-        </button>
+        </Link>
       </div>
 
-      {/* Strate Canal+ */}
       {canalContents.length > 0 && (
         <section aria-labelledby="canal-section-title" className="mb-12">
           <div className="flex items-baseline justify-between gap-4 mb-4 flex-wrap">
-            <h2 id="canal-section-title" className="text-xl font-bold">
-              CANAL+
-            </h2>
-            <button
-              onClick={() => onViewPlatform('canal')}
+            <h2 id="canal-section-title" className="text-xl font-bold">CANAL+</h2>
+            <Link
+              to="/plateforme/canal"
               className="text-sm font-medium underline hover:no-underline focus-visible:outline-none focus-visible:ring focus-visible:ring-offset-2 focus-visible:ring-black dark:focus-visible:ring-white"
             >
               Voir tous les contenus →
-            </button>
+            </Link>
           </div>
           <ul className="space-y-2">
             {canalContents.map((content) => (
-              <PlatformMiniCard
-                key={content.id}
-                content={content}
-                onViewDetail={onViewDetail}
-              />
+              <PlatformMiniCard key={content.id} content={content} />
             ))}
           </ul>
         </section>
       )}
 
-      {/* Strate Netflix */}
       {netflixContents.length > 0 && (
         <section aria-labelledby="netflix-section-title" className="mb-12">
           <div className="flex items-baseline justify-between gap-4 mb-4 flex-wrap">
-            <h2 id="netflix-section-title" className="text-xl font-bold">
-              Netflix
-            </h2>
-            <button
-              onClick={() => onViewPlatform('netflix')}
+            <h2 id="netflix-section-title" className="text-xl font-bold">Netflix</h2>
+            <Link
+              to="/plateforme/netflix"
               className="text-sm font-medium underline hover:no-underline focus-visible:outline-none focus-visible:ring focus-visible:ring-offset-2 focus-visible:ring-black dark:focus-visible:ring-white"
             >
               Voir tous les contenus →
-            </button>
+            </Link>
           </div>
           <ul className="space-y-2">
             {netflixContents.map((content) => (
-              <PlatformMiniCard
-                key={content.id}
-                content={content}
-                onViewDetail={onViewDetail}
-              />
+              <PlatformMiniCard key={content.id} content={content} />
             ))}
           </ul>
         </section>
       )}
 
-      {/* Ajouts récents */}
       <section aria-label="Ajouts récents de la communauté">
         <h2 className="text-xl font-bold mb-4">Ajouts récents de la communauté</h2>
         {recentAdditions.length === 0 ? (
-          <p className="text-sm text-gray-700 dark:text-gray-300">
-            Aucun ajout récent pour l'instant.
-          </p>
+          <p className="text-sm text-gray-700 dark:text-gray-300">Aucun ajout récent pour l'instant.</p>
         ) : (
           <ul className="space-y-3">
             {recentAdditions.map((contrib) => (
-              <li
-                key={contrib.id}
-                className="text-sm py-2 border-b border-gray-200 dark:border-gray-700"
-              >
+              <li key={contrib.id} className="text-sm py-2 border-b border-gray-200 dark:border-gray-700">
                 <span className="font-medium">
                   {contrib.contents?.title}
                   {contrib.contents?.year ? ` (${contrib.contents.year})` : ''}
