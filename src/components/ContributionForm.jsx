@@ -84,7 +84,7 @@ export default function ContributionForm({
   return (
     <div className="mt-4 p-4 border-2 border-gray-300 dark:border-gray-600 rounded">
       <h3 className="text-lg font-semibold mb-4">
-        Signaler une erreur — {contentTitle} sur {platform}
+        Signaler une erreur pour {contentTitle} sur {platform}
       </h3>
 
       {errorMsg && (
@@ -104,7 +104,7 @@ export default function ContributionForm({
             htmlFor="contribution-status"
             className="block mb-2 font-medium"
           >
-            Statut de l'audiodescription
+            Que souhaitez-vous signaler ?
           </label>
           <select
             id="contribution-status"

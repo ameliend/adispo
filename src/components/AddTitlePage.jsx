@@ -192,12 +192,13 @@ export default function AddTitlePage() {
                       checked={selectedTitle?.tmdbId === r.tmdbId}
                       onChange={() => setSelectedTitle(r)}
                       className="flex-shrink-0"
+                      aria-label={[r.title, r.year, r.type === 'tv' ? 'Série' : 'Film'].filter(Boolean).join(', ')}
                     />
-                    <span className="flex items-center gap-3 min-w-0">
+                    <span className="flex items-center gap-3 min-w-0" aria-hidden="true">
                       {r.posterPath && (
                         <img
                           src={r.posterPath}
-                          alt={`Affiche de ${r.title}`}
+                          alt=""
                           width={30}
                           height={45}
                           className="rounded flex-shrink-0 object-cover"
