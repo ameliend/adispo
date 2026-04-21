@@ -23,8 +23,8 @@ export default function TrustBadge({ validationCount }) {
 
   return (
     <span
+      aria-hidden="true"
       className={`inline-flex items-center px-2 py-0.5 rounded text-sm font-medium ${LEVEL_STYLES[level]}`}
-      aria-label={`Niveau de confiance : ${level} (${validationCount} validation${validationCount > 1 ? 's' : ''})`}
     >
       {level}
     </span>
