@@ -15,7 +15,7 @@ export default function AddTitlePage() {
   const [tmdbQuery, setTmdbQuery] = useState('')
   const [tmdbResults, setTmdbResults] = useState([])
   const [tmdbStatusMsg, setTmdbStatusMsg] = useState('')
-  const [selectedTitle, setSelectedTitle] = useState(initialTitle || null)
+  const [selectedTitle, setSelectedTitle] = useState(initialTitle ? { title: initialTitle } : null)
   const [selectedPlatforms, setSelectedPlatforms] = useState([])
   const [platformLinks, setPlatformLinks] = useState({})
   const [isSubmitting, setIsSubmitting] = useState(false)
@@ -253,9 +253,7 @@ export default function AddTitlePage() {
             Étape 2 sur 3
           </h2>
           <p className="text-base mb-6 text-gray-700 dark:text-gray-300">
-            Sur quelles plateformes l'audiodescription est-elle disponible pour{' '}
-            <strong>{selectedTitle?.title}</strong>
-            {selectedTitle?.year ? ` (${selectedTitle.year})` : ''} ?
+            Sur quelles plateformes l'audiodescription est-elle disponible ?
           </p>
 
           <fieldset className="mb-6">
@@ -267,8 +265,12 @@ export default function AddTitlePage() {
                 const isChecked = selectedPlatforms.includes(p.value)
                 return (
                   <div key={p.value}>
-                    <label className="flex items-center gap-3 p-3 border-2 rounded cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-800 border-gray-300 dark:border-gray-600 has-[:checked]:border-black dark:has-[:checked]:border-white">
+                    <label
+                      htmlFor={`platform-check-${p.value}`}
+                      className="flex items-center gap-3 p-3 border-2 rounded cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-800 border-gray-300 dark:border-gray-600 has-[:checked]:border-black dark:has-[:checked]:border-white"
+                    >
                       <input
+                        id={`platform-check-${p.value}`}
                         type="checkbox"
                         value={p.value}
                         checked={isChecked}
