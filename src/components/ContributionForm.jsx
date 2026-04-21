@@ -2,7 +2,6 @@ import { useEffect, useRef, useState } from 'react'
 import { submitContribution } from '../lib/supabase.js'
 
 const STATUS_OPTIONS = [
-  { value: 'available', label: 'Audiodescription disponible' },
   { value: 'unavailable', label: 'Audiodescription non disponible' },
   { value: 'unsure', label: 'Je ne suis pas sûr(e)' },
 ]
@@ -14,7 +13,7 @@ export default function ContributionForm({
   onClose,
   returnFocusRef,
 }) {
-  const [claimedStatus, setClaimedStatus] = useState('available')
+  const [claimedStatus, setClaimedStatus] = useState('unavailable')
   const [email, setEmail] = useState('')
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [submitted, setSubmitted] = useState(false)
