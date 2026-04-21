@@ -7,6 +7,43 @@ export const supabase = createClient(
 
 export async function searchTitles(query, platform, genre) {
   try {
+    const hasText = query && query.trim()
+    const hasPlatform = platform && platform.trim()
+    const hasGenre = genre && genre.trim()
+
+    let data, error
+
+    if (hasPlatform && !hasText) {
+      // Quand on filtre par plateforme sans texte : requêter ad_status directement
+      const { data: adData, error: adError } = await supabase
+        .from('ad_status')
+        .select(`
+          id, platform, status, trust_level, validation_count, lien,
+          contents (id, tmdb_id, title, year, genre, type, synopsis, poster_path)
+        `)
+        .eq('platform', platform.trim())
+        .eq('status', 'available')
+        .limit(500)
+
+      if (adError) return { data: null, error: adError }
+
+      let items = (adData || [])
+        .filter(s => s.contents)
+        .filter(s => !hasGenre || (s.contents.genre || '').toLowerCase().includes(hasGenre.toLowerCase()))
+        .map(s => ({ ...s.contents, ad_status: [{ id: s.id, platform: s.platform, status: s.status, trust_level: s.trust_level, validation_count: s.validation_count, lien: s.lien }] }))
+
+      // Dédoublonne par titre
+      const seen = new Map()
+      for (const c of items) {
+        const key = c.title.toLowerCase()
+        if (!seen.has(key) || (!seen.get(key).poster_path && c.poster_path)) seen.set(key, c)
+      }
+      items = [...seen.values()].sort((a, b) => a.title.localeCompare(b.title, 'fr'))
+
+      return { data: items, error: null }
+    }
+
+    // Recherche texte (avec ou sans filtres supplémentaires)
     let q = supabase
       .from('contents')
       .select(`
@@ -14,41 +51,28 @@ export async function searchTitles(query, platform, genre) {
         ad_status (id, platform, status, trust_level, validation_count, updated_at, lien)
       `)
 
-    if (query && query.trim()) {
-      q = q.ilike('title', `%${query.trim()}%`)
-    }
+    if (hasText) q = q.ilike('title', `%${query.trim()}%`)
+    if (hasGenre) q = q.ilike('genre', `%${hasGenre}%`)
+    if (hasPlatform) q = q.eq('ad_status.platform', platform.trim())
 
-    if (genre && genre.trim()) {
-      q = q.ilike('genre', `%${genre.trim()}%`)
-    }
+    q = q.order('title', { ascending: true }).limit(100)
 
-    if (platform && platform.trim()) {
-      q = q.eq('ad_status.platform', platform.trim())
-    }
-
-    q = q.order('title', { ascending: true }).limit(50)
-
-    const { data, error } = await q
+    ;({ data, error } = await q)
     if (error) return { data: null, error }
 
     let filtered = data || []
-    if (platform && platform.trim()) {
-      filtered = filtered.filter(
-        (c) => c.ad_status && c.ad_status.some((s) => s.platform === platform.trim())
-      )
+    if (hasPlatform) {
+      filtered = filtered.filter(c => c.ad_status && c.ad_status.some(s => s.platform === platform.trim()))
     }
 
-    // Dédoublonne par titre (garde le premier avec poster_path si possible)
+    // Dédoublonne par titre
     const seen = new Map()
     for (const c of filtered) {
       const key = c.title.toLowerCase()
-      if (!seen.has(key) || (!seen.get(key).poster_path && c.poster_path)) {
-        seen.set(key, c)
-      }
+      if (!seen.has(key) || (!seen.get(key).poster_path && c.poster_path)) seen.set(key, c)
     }
-    filtered = [...seen.values()]
 
-    return { data: filtered, error: null }
+    return { data: [...seen.values()], error: null }
   } catch (err) {
     return { data: null, error: err }
   }
