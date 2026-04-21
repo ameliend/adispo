@@ -88,7 +88,7 @@ export default function PlatformPage() {
                   <button
                     onClick={() => navigate(`/contenu/${content.id}`, { state: { content } })}
                     className="w-full text-left p-3 border-2 border-gray-200 dark:border-gray-700 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-800 hover:border-black dark:hover:border-white focus-visible:outline-none focus-visible:ring focus-visible:ring-offset-2 focus-visible:ring-black dark:focus-visible:ring-white"
-                    aria-label={`Voir ${content.title}${content.year ? ` ${content.year}` : ''}${trustLevel ? `, ${trustLevel}` : ''}`}
+                    aria-label={[content.title, content.year, content.genre, trustLevel].filter(Boolean).join(', ')}
                   >
                     <div className="flex items-center justify-between gap-4 flex-nowrap">
                       <div className="flex items-center gap-3 min-w-0">
