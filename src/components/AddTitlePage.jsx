@@ -183,6 +183,7 @@ export default function AddTitlePage() {
                 {(selectedTitle ? tmdbResults.filter(r => r.tmdbId === selectedTitle.tmdbId) : tmdbResults).map((r) => (
                   <label
                     key={r.tmdbId}
+                    aria-label={[r.title, r.year, r.type === 'tv' ? 'Série' : 'Film'].filter(Boolean).join(', ')}
                     className="flex items-center gap-3 p-3 border-2 rounded cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-800 border-gray-300 dark:border-gray-600 has-[:checked]:border-black dark:has-[:checked]:border-white"
                   >
                     <input
@@ -192,7 +193,6 @@ export default function AddTitlePage() {
                       checked={selectedTitle?.tmdbId === r.tmdbId}
                       onChange={() => setSelectedTitle(r)}
                       className="flex-shrink-0"
-                      aria-label={[r.title, r.year, r.type === 'tv' ? 'Série' : 'Film'].filter(Boolean).join(', ')}
                     />
                     <span className="flex items-center gap-3 min-w-0" aria-hidden="true">
                       {r.posterPath && (

@@ -3,7 +3,7 @@ import { useNavigate, useLocation, useOutletContext } from 'react-router-dom'
 import { searchTitles, getContentByTmdbId } from '../lib/supabase.js'
 import { searchTmdb, posterUrl } from '../lib/tmdb.js'
 import { PLATFORM_LABELS } from '../lib/platforms.js'
-import TrustBadge from './TrustBadge.jsx'
+import TrustBadge, { getTrustLevel } from './TrustBadge.jsx'
 import ResultCard from './ResultCard.jsx'
 
 const PLATFORMS = [
@@ -315,12 +315,13 @@ export default function SearchPage() {
             <ul className="space-y-2">
               {browseResults.map((content) => {
                 const adStatus = content.ad_status?.[0]
+                const trustLevel = getTrustLevel(adStatus?.validation_count)
                 return (
                   <li key={content.id}>
                     <button
                       onClick={() => navigate(`/contenu/${content.id}`, { state: { content } })}
                       className="w-full text-left p-3 border-2 border-gray-200 dark:border-gray-700 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-800 hover:border-black dark:hover:border-white focus-visible:outline-none focus-visible:ring focus-visible:ring-offset-2 focus-visible:ring-black dark:focus-visible:ring-white"
-                      aria-label={`Voir ${content.title}${content.year ? ` (${content.year})` : ''}`}
+                      aria-label={`Voir ${content.title}${content.year ? ` ${content.year}` : ''}${trustLevel ? `, ${trustLevel}` : ''}`}
                     >
                       <div className="flex items-center justify-between gap-4 flex-nowrap">
                         <div className="flex items-center gap-3 min-w-0">
