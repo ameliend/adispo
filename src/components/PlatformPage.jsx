@@ -105,8 +105,8 @@ export default function PlatformPage() {
                         <div className="min-w-0">
                           <span className="font-semibold truncate block">{content.title}</span>
                           {content.year && (
-                            <span aria-hidden="true" className="text-sm text-gray-700 dark:text-gray-300 ml-2">
-                              ({content.year})
+                            <span className="text-sm text-gray-700 dark:text-gray-300 ml-2">
+                              <span aria-hidden="true">(</span>{content.year}<span aria-hidden="true">)</span>
                             </span>
                           )}
                           {content.genre && (

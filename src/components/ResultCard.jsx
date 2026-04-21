@@ -68,8 +68,8 @@ export default function ResultCard({ content, adStatuses, onValidated, onViewDet
               content.title
             )}
             {content.year && (
-              <span aria-hidden="true" className="font-normal text-base ml-2 text-gray-700 dark:text-gray-300">
-                ({content.year})
+              <span className="font-normal text-base ml-2 text-gray-700 dark:text-gray-300">
+                <span aria-hidden="true">(</span>{content.year}<span aria-hidden="true">)</span>
               </span>
             )}
           </h2>
