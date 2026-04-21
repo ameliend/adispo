@@ -1,7 +1,8 @@
-import { useRef, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
+import { useNavigate, useLocation, useParams, useOutletContext } from 'react-router-dom'
 import TrustBadge from './TrustBadge.jsx'
 import ContributionForm from './ContributionForm.jsx'
-import { incrementValidation } from '../lib/supabase.js'
+import { incrementValidation, getContentById } from '../lib/supabase.js'
 import { PLATFORM_LABELS } from '../lib/platforms.js'
 import { posterUrl } from '../lib/tmdb.js'
 
@@ -11,12 +12,35 @@ const STATUS_LABELS = {
   unverified: 'Non encore vérifié',
 }
 
-export default function ContentDetailPage({ content, announce, onBack }) {
+export default function ContentDetailPage() {
+  const navigate = useNavigate()
+  const location = useLocation()
+  const { id } = useParams()
+  const { announce } = useOutletContext()
+  const [content, setContent] = useState(location.state?.content || null)
+  const [isLoading, setIsLoading] = useState(!location.state?.content)
   const [activeReportId, setActiveReportId] = useState(null)
   const [validatedIds, setValidatedIds] = useState({})
   const [localCounts, setLocalCounts] = useState({})
 
   const reportButtonRefs = useRef({})
+
+  useEffect(() => {
+    if (!content) {
+      getContentById(id).then(({ data }) => {
+        setContent(data)
+        setIsLoading(false)
+      })
+    }
+  }, [id]) // eslint-disable-line react-hooks/exhaustive-deps
+
+  useEffect(() => {
+    if (content) document.title = `${content.title} — ADispo`
+  }, [content])
+
+  if (isLoading) return <p className="text-base text-gray-700 dark:text-gray-300">Chargement…</p>
+  if (!content) return <p className="text-base">Contenu introuvable.</p>
+
   const adStatuses = content.ad_status || []
 
   async function handleValidate(statusId, platform) {
@@ -40,7 +64,7 @@ export default function ContentDetailPage({ content, announce, onBack }) {
   return (
     <section aria-labelledby="content-detail-title">
       <button
-        onClick={onBack}
+        onClick={() => navigate(-1)}
         className="mb-6 text-sm font-medium underline hover:no-underline focus-visible:outline-none focus-visible:ring focus-visible:ring-offset-2 focus-visible:ring-black dark:focus-visible:ring-white"
       >
         ← Retour à la recherche

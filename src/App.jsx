@@ -1,19 +1,14 @@
 import { useCallback, useRef, useState } from 'react'
+import { Routes, Route, Outlet, useNavigate, Link } from 'react-router-dom'
 import HomePage from './components/HomePage.jsx'
 import SearchPage from './components/SearchPage.jsx'
 import AddTitlePage from './components/AddTitlePage.jsx'
 import ContentDetailPage from './components/ContentDetailPage.jsx'
 import PlatformPage from './components/PlatformPage.jsx'
-import { PLATFORM_LABELS } from './lib/platforms.js'
 
-export default function App() {
-  const [page, setPage] = useState('home')
-  const [selectedContent, setSelectedContent] = useState(null)
-  const [selectedPlatform, setSelectedPlatform] = useState(null)
-  const [addInitialTitle, setAddInitialTitle] = useState(null)
+function Layout() {
   const [announcement, setAnnouncement] = useState('')
   const [toast, setToast] = useState('')
-
   const mainRef = useRef(null)
   const toastTimerRef = useRef(null)
 
@@ -31,29 +26,9 @@ export default function App() {
     })
   }, [])
 
-  function navigate(newPage, params = {}) {
-    if (params.content !== undefined) setSelectedContent(params.content)
-    if (params.platform !== undefined) setSelectedPlatform(params.platform)
-    if (params.initialTitle !== undefined) setAddInitialTitle(params.initialTitle)
-    setPage(newPage)
-
-    const labels = {
-      home: 'Accueil',
-      search: 'Rechercher un titre',
-      add: 'Ajouter un titre',
-      content: params.content ? `Détail : ${params.content.title}` : 'Détail du contenu',
-      platform: params.platform
-        ? `Tous les contenus sur ${PLATFORM_LABELS[params.platform] || params.platform}`
-        : 'Contenus de la plateforme',
-    }
-    announce(`Navigation vers : ${labels[newPage] || newPage}`)
+  const focusMain = useCallback(() => {
     requestAnimationFrame(() => mainRef.current?.focus())
-  }
-
-  function handleAddSuccess() {
-    navigate('home')
-    showToast('Le titre a été ajouté avec succès. Merci pour votre contribution !')
-  }
+  }, [])
 
   return (
     <>
@@ -61,29 +36,13 @@ export default function App() {
         Aller au contenu principal
       </a>
 
-      {/* Global aria-live announcer */}
-      <div
-        role="status"
-        aria-live="polite"
-        aria-atomic="true"
-        className="sr-only"
-        id="global-announcer"
-      >
+      <div role="status" aria-live="polite" aria-atomic="true" className="sr-only">
         {announcement}
       </div>
-
-      {/* Toast announcer */}
-      <div
-        role="status"
-        aria-live="polite"
-        aria-atomic="true"
-        className="sr-only"
-        id="toast-announcer"
-      >
+      <div role="status" aria-live="polite" aria-atomic="true" className="sr-only">
         {toast}
       </div>
 
-      {/* Visual toast */}
       {toast && (
         <div
           aria-hidden="true"
@@ -95,16 +54,18 @@ export default function App() {
 
       <header className="border-b-2 border-black dark:border-white">
         <div className="max-w-2xl mx-auto px-4 py-4">
-          <div className="flex items-center justify-between gap-4 flex-wrap">
-            <h1 className="text-2xl font-bold">
+          <h1 className="text-2xl font-bold">
+            <Link
+              to="/"
+              className="hover:underline focus-visible:outline-none focus-visible:ring focus-visible:ring-offset-2 focus-visible:ring-black dark:focus-visible:ring-white rounded"
+            >
               ADispo
-              {' '}
-              <span className="text-base font-normal text-gray-700 dark:text-gray-300">
-                — Audiodescription sur les plateformes de streaming
-              </span>
-            </h1>
-
-          </div>
+            </Link>
+            {' '}
+            <span className="text-base font-normal text-gray-700 dark:text-gray-300">
+              — Audiodescription sur les plateformes de streaming
+            </span>
+          </h1>
         </div>
       </header>
 
@@ -114,43 +75,7 @@ export default function App() {
         ref={mainRef}
         className="max-w-2xl mx-auto px-4 py-8 focus-visible:outline-none"
       >
-        {page === 'home' && (
-          <HomePage
-            onNavigateSearch={() => navigate('search')}
-            onViewDetail={(content) => navigate('content', { content })}
-            onViewPlatform={(platform) => navigate('platform', { platform })}
-          />
-        )}
-        {page === 'search' && (
-          <SearchPage
-            announce={announce}
-            onViewDetail={(content) => navigate('content', { content })}
-            onNavigateAdd={(title) => navigate('add', { initialTitle: title || null })}
-            onBack={() => navigate('home')}
-          />
-        )}
-        {page === 'add' && (
-          <AddTitlePage
-            announce={announce}
-            onSubmitSuccess={handleAddSuccess}
-            initialTitle={addInitialTitle}
-          />
-        )}
-        {page === 'content' && selectedContent && (
-          <ContentDetailPage
-            content={selectedContent}
-            announce={announce}
-            onBack={() => navigate('home')}
-          />
-        )}
-        {page === 'platform' && selectedPlatform && (
-          <PlatformPage
-            platform={selectedPlatform}
-            announce={announce}
-            onBack={() => navigate('home')}
-            onViewDetail={(content) => navigate('content', { content })}
-          />
-        )}
+        <Outlet context={{ announce, showToast, focusMain }} />
       </main>
 
       <footer className="border-t-2 border-gray-200 dark:border-gray-700 mt-16">
@@ -161,5 +86,19 @@ export default function App() {
         </div>
       </footer>
     </>
+  )
+}
+
+export default function App() {
+  return (
+    <Routes>
+      <Route element={<Layout />}>
+        <Route path="/" element={<HomePage />} />
+        <Route path="/recherche" element={<SearchPage />} />
+        <Route path="/ajouter" element={<AddTitlePage />} />
+        <Route path="/contenu/:id" element={<ContentDetailPage />} />
+        <Route path="/plateforme/:platform" element={<PlatformPage />} />
+      </Route>
+    </Routes>
   )
 }
