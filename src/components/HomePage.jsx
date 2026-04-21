@@ -42,7 +42,7 @@ function PlatformMiniCard({ content }) {
             <div className="min-w-0">
               <span className="font-medium truncate block">{content.title}</span>
               {content.year && (
-                <span className="text-sm text-gray-700 dark:text-gray-300">
+                <span aria-hidden="true" className="text-sm text-gray-700 dark:text-gray-300">
                   ({content.year})
                 </span>
               )}

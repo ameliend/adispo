@@ -34,9 +34,13 @@ export default function ContentDetailPage() {
     }
   }, [id]) // eslint-disable-line react-hooks/exhaustive-deps
 
+  const titleRef = useRef(null)
+
   useEffect(() => {
-    if (content) document.title = `${content.title} — ADispo`
-  }, [content])
+    if (!isLoading && content) {
+      titleRef.current?.focus()
+    }
+  }, [isLoading, content])
 
   if (isLoading) return <p className="text-base text-gray-700 dark:text-gray-300">Chargement…</p>
   if (!content) return <p className="text-base">Contenu introuvable.</p>
@@ -74,7 +78,7 @@ export default function ContentDetailPage() {
         {posterUrl(content.poster_path || content.posterPath) && (
           <img
             src={posterUrl(content.poster_path || content.posterPath)}
-            alt={`Affiche de ${content.title}`}
+            alt=""
             width={90}
             height={135}
             className="rounded flex-shrink-0 object-cover"
@@ -83,12 +87,13 @@ export default function ContentDetailPage() {
         <div className="flex-1 min-w-0">
           <h2
             id="content-detail-title"
+            ref={titleRef}
             tabIndex={-1}
             className="text-2xl font-bold mb-2 focus-visible:outline-none"
           >
             {content.title}
             {content.year && (
-              <span className="font-normal text-lg ml-2 text-gray-700 dark:text-gray-300">
+              <span aria-hidden="true" className="font-normal text-lg ml-2 text-gray-700 dark:text-gray-300">
                 ({content.year})
               </span>
             )}
@@ -133,7 +138,6 @@ export default function ContentDetailPage() {
               >
                 <div className="flex flex-wrap items-center gap-3 mb-3">
                   <span className="text-base font-semibold">{platformName}</span>
-                  <span className="text-sm">{label}</span>
                   {count > 0 && <TrustBadge validationCount={count} />}
                 </div>
 
