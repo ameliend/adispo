@@ -20,12 +20,16 @@ function friendlyError(msg) {
   return ERROR_MAP[msg] || 'Une erreur est survenue. Veuillez réessayer.'
 }
 
+const inputClass = 'w-full px-4 py-3 min-h-touch border-2 border-black dark:border-white rounded bg-white dark:bg-gray-900 text-base focus-visible:outline-none focus-visible:ring focus-visible:ring-offset-2 focus-visible:ring-black dark:focus-visible:ring-white'
+const btnPrimaryClass = 'px-6 py-3 min-h-touch bg-black dark:bg-white text-white dark:text-black font-medium rounded hover:bg-gray-800 dark:hover:bg-gray-200 focus-visible:outline-none focus-visible:ring focus-visible:ring-offset-2 focus-visible:ring-black dark:focus-visible:ring-white disabled:opacity-50 disabled:cursor-not-allowed'
+const btnSecondaryClass = 'px-3 py-2 min-h-touch text-sm border-2 border-black dark:border-white rounded hover:bg-gray-100 dark:hover:bg-gray-800 focus-visible:outline-none focus-visible:ring focus-visible:ring-offset-2 focus-visible:ring-black dark:focus-visible:ring-white whitespace-nowrap'
+
 export default function AuthPage() {
   const navigate = useNavigate()
   const location = useLocation()
   const { user, announce } = useOutletContext()
 
-  const [tab, setTab] = useState('login')
+  const [mode, setMode] = useState('login')
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [confirmPassword, setConfirmPassword] = useState('')
@@ -36,10 +40,13 @@ export default function AuthPage() {
 
   const errorRef = useRef(null)
   const successRef = useRef(null)
+  const titleRef = useRef(null)
 
   const from = location.state?.from ?? '/'
 
-  useEffect(() => { document.title = 'Connexion — ADispo' }, [])
+  useEffect(() => {
+    document.title = mode === 'login' ? 'Connexion — ADispo' : 'Créer un compte — ADispo'
+  }, [mode])
 
   useEffect(() => {
     if (user) navigate(from, { replace: true })
@@ -53,12 +60,13 @@ export default function AuthPage() {
     if (successMsg) requestAnimationFrame(() => successRef.current?.focus())
   }, [successMsg])
 
-  function switchTab(newTab) {
-    setTab(newTab)
+  function switchMode(newMode) {
+    setMode(newMode)
     setErrorMsg('')
     setSuccessMsg('')
     setPassword('')
     setConfirmPassword('')
+    requestAnimationFrame(() => titleRef.current?.focus())
   }
 
   const rules = PASSWORD_RULES.map((r) => ({ ...r, valid: r.test(password) }))
@@ -70,7 +78,6 @@ export default function AuthPage() {
     const { error } = await signIn(email, password)
     setIsSubmitting(false)
     if (error) setErrorMsg(friendlyError(error.message))
-    // redirect via useEffect when user state updates
   }
 
   async function handleSignup(e) {
@@ -95,102 +102,25 @@ export default function AuthPage() {
     announce('Email de confirmation envoyé.')
   }
 
-  const inputClass = 'w-full px-4 py-3 min-h-touch border-2 border-black dark:border-white rounded bg-white dark:bg-gray-900 text-base focus-visible:outline-none focus-visible:ring focus-visible:ring-offset-2 focus-visible:ring-black dark:focus-visible:ring-white'
-  const btnPrimaryClass = 'px-6 py-3 min-h-touch bg-black dark:bg-white text-white dark:text-black font-medium rounded hover:bg-gray-800 dark:hover:bg-gray-200 focus-visible:outline-none focus-visible:ring focus-visible:ring-offset-2 focus-visible:ring-black dark:focus-visible:ring-white disabled:opacity-50 disabled:cursor-not-allowed'
-  const btnSecondaryClass = 'px-3 py-2 min-h-touch text-sm border-2 border-black dark:border-white rounded hover:bg-gray-100 dark:hover:bg-gray-800 focus-visible:outline-none focus-visible:ring focus-visible:ring-offset-2 focus-visible:ring-black dark:focus-visible:ring-white whitespace-nowrap'
-  const tabClass = (active) => `px-4 py-2 text-sm font-medium border-b-2 -mb-0.5 focus-visible:outline-none focus-visible:ring focus-visible:ring-offset-2 focus-visible:ring-black dark:focus-visible:ring-white ${active ? 'border-black dark:border-white' : 'border-transparent text-gray-600 dark:text-gray-400 hover:text-black dark:hover:text-white'}`
-
-  return (
-    <section aria-labelledby="auth-title">
-      <h2
-        id="auth-title"
-        className="text-2xl font-bold mb-6"
-      >
-        {tab === 'login' ? 'Se connecter' : 'Créer un compte'}
-      </h2>
-
-      <div role="tablist" aria-label="Mode d'authentification" className="flex border-b-2 border-gray-200 dark:border-gray-700 mb-6">
+  if (mode === 'signup') {
+    return (
+      <section aria-labelledby="auth-title">
         <button
-          role="tab"
-          id="tab-login"
-          aria-selected={tab === 'login'}
-          aria-controls="panel-login"
-          onClick={() => switchTab('login')}
-          className={tabClass(tab === 'login')}
+          onClick={() => switchMode('login')}
+          className="mb-6 text-sm font-medium underline hover:no-underline focus-visible:outline-none focus-visible:ring focus-visible:ring-offset-2 focus-visible:ring-black dark:focus-visible:ring-white"
         >
-          Se connecter
+          ← Retour à la connexion
         </button>
-        <button
-          role="tab"
-          id="tab-signup"
-          aria-selected={tab === 'signup'}
-          aria-controls="panel-signup"
-          onClick={() => switchTab('signup')}
-          className={tabClass(tab === 'signup')}
+
+        <h2
+          id="auth-title"
+          ref={titleRef}
+          tabIndex={-1}
+          className="text-2xl font-bold mb-6 focus-visible:outline-none"
         >
           Créer un compte
-        </button>
-      </div>
+        </h2>
 
-      {/* Login panel */}
-      <div id="panel-login" role="tabpanel" aria-labelledby="tab-login" hidden={tab !== 'login'}>
-        {errorMsg && tab === 'login' && (
-          <p
-            ref={errorRef}
-            role="alert"
-            tabIndex={-1}
-            className="mb-4 p-3 bg-red-50 dark:bg-red-950 border border-red-700 rounded text-red-900 dark:text-red-100 text-sm focus-visible:outline-none"
-          >
-            {errorMsg}
-          </p>
-        )}
-        <form onSubmit={handleLogin} noValidate>
-          <div className="mb-4">
-            <label htmlFor="login-email" className="block mb-2 font-medium">
-              Adresse e-mail
-            </label>
-            <input
-              id="login-email"
-              type="email"
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              autoComplete="email"
-              required
-              className={inputClass}
-            />
-          </div>
-          <div className="mb-6">
-            <label htmlFor="login-password" className="block mb-2 font-medium">
-              Mot de passe
-            </label>
-            <div className="flex gap-2 items-start">
-              <input
-                id="login-password"
-                type={showPassword ? 'text' : 'password'}
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                autoComplete="current-password"
-                required
-                className={`${inputClass} flex-1`}
-              />
-              <button
-                type="button"
-                onClick={() => setShowPassword((p) => !p)}
-                aria-pressed={showPassword}
-                className={btnSecondaryClass}
-              >
-                {showPassword ? 'Masquer' : 'Afficher'}
-              </button>
-            </div>
-          </div>
-          <button type="submit" disabled={isSubmitting} className={btnPrimaryClass}>
-            {isSubmitting ? 'Connexion…' : 'Se connecter'}
-          </button>
-        </form>
-      </div>
-
-      {/* Signup panel */}
-      <div id="panel-signup" role="tabpanel" aria-labelledby="tab-signup" hidden={tab !== 'signup'}>
         {successMsg ? (
           <p
             ref={successRef}
@@ -202,7 +132,7 @@ export default function AuthPage() {
           </p>
         ) : (
           <>
-            {errorMsg && tab === 'signup' && (
+            {errorMsg && (
               <p
                 ref={errorRef}
                 role="alert"
@@ -291,7 +221,86 @@ export default function AuthPage() {
             </form>
           </>
         )}
-      </div>
+      </section>
+    )
+  }
+
+  return (
+    <section aria-labelledby="auth-title">
+      <h2
+        id="auth-title"
+        ref={titleRef}
+        tabIndex={-1}
+        className="text-2xl font-bold mb-4 focus-visible:outline-none"
+      >
+        Se connecter
+      </h2>
+
+      <p className="text-base text-gray-700 dark:text-gray-300 mb-6">
+        Connectez-vous avec votre identifiant et votre mot de passe.{' '}
+        Vous n'avez pas encore de compte ?{' '}
+        <button
+          onClick={() => switchMode('signup')}
+          className="font-medium underline hover:no-underline focus-visible:outline-none focus-visible:ring focus-visible:ring-offset-2 focus-visible:ring-black dark:focus-visible:ring-white"
+        >
+          Créer mon compte
+        </button>
+      </p>
+
+      {errorMsg && (
+        <p
+          ref={errorRef}
+          role="alert"
+          tabIndex={-1}
+          className="mb-4 p-3 bg-red-50 dark:bg-red-950 border border-red-700 rounded text-red-900 dark:text-red-100 text-sm focus-visible:outline-none"
+        >
+          {errorMsg}
+        </p>
+      )}
+
+      <form onSubmit={handleLogin} noValidate>
+        <div className="mb-4">
+          <label htmlFor="login-email" className="block mb-2 font-medium">
+            Adresse e-mail
+          </label>
+          <input
+            id="login-email"
+            type="email"
+            value={email}
+            onChange={(e) => setEmail(e.target.value)}
+            autoComplete="email"
+            required
+            className={inputClass}
+          />
+        </div>
+        <div className="mb-6">
+          <label htmlFor="login-password" className="block mb-2 font-medium">
+            Mot de passe
+          </label>
+          <div className="flex gap-2 items-start">
+            <input
+              id="login-password"
+              type={showPassword ? 'text' : 'password'}
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+              autoComplete="current-password"
+              required
+              className={`${inputClass} flex-1`}
+            />
+            <button
+              type="button"
+              onClick={() => setShowPassword((p) => !p)}
+              aria-pressed={showPassword}
+              className={btnSecondaryClass}
+            >
+              {showPassword ? 'Masquer' : 'Afficher'}
+            </button>
+          </div>
+        </div>
+        <button type="submit" disabled={isSubmitting} className={btnPrimaryClass}>
+          {isSubmitting ? 'Connexion…' : 'Se connecter'}
+        </button>
+      </form>
     </section>
   )
 }

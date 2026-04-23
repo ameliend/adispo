@@ -291,6 +291,16 @@ export async function getRandomByPlatform(platform, limit = 10) {
   }
 }
 
+export async function updateEmail(newEmail) {
+  const { data, error } = await supabase.auth.updateUser({ email: newEmail })
+  return { data, error }
+}
+
+export async function updatePassword(newPassword) {
+  const { data, error } = await supabase.auth.updateUser({ password: newPassword })
+  return { data, error }
+}
+
 // ── Auth ─────────────────────────────────────────────────────────────────────
 
 export async function signUp(email, password) {
