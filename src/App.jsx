@@ -111,12 +111,20 @@ function Layout() {
 
       <header className="border-b-2 border-black dark:border-white">
         <div className="max-w-2xl mx-auto px-4 py-4 flex items-center justify-between gap-4">
-          <h1 className="text-2xl font-bold min-w-0">
+          <h1 className="font-bold min-w-0 leading-none">
             <Link
               to="/"
-              className="hover:underline focus-visible:outline-none focus-visible:ring focus-visible:ring-offset-2 focus-visible:ring-black dark:focus-visible:ring-white rounded"
+              aria-label="Accueil ADispo"
+              className="focus-visible:outline-none focus-visible:ring focus-visible:ring-offset-2 focus-visible:ring-black dark:focus-visible:ring-white rounded inline-flex items-center"
             >
-              ADispo
+              <svg
+                aria-hidden="true"
+                focusable="false"
+                viewBox="0 0 110 30"
+                className="fill-current h-7 w-auto"
+              >
+                <text x="0" y="24" fontSize="26" fontWeight="700" fontFamily="system-ui,-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif">ADispo</text>
+              </svg>
             </Link>
             {' '}
             <span className="text-base font-normal text-gray-700 dark:text-gray-300 hidden sm:inline">
@@ -125,27 +133,34 @@ function Layout() {
           </h1>
 
           <div className="relative flex-shrink-0" ref={menuRef}>
-            <button
-              ref={menuBtnRef}
-              onClick={() => setMenuOpen((p) => !p)}
-              aria-expanded={menuOpen}
-              aria-controls="header-menu"
-              aria-haspopup="menu"
-              className="px-4 py-2 min-h-touch text-sm font-medium border-2 border-black dark:border-white rounded hover:bg-gray-100 dark:hover:bg-gray-800 focus-visible:outline-none focus-visible:ring focus-visible:ring-offset-2 focus-visible:ring-black dark:focus-visible:ring-white inline-flex items-center gap-1"
-            >
-              Menu
-              <span aria-hidden="true">{menuOpen ? '▲' : '▼'}</span>
-            </button>
-
-            {menuOpen && (
-              <div
-                id="header-menu"
-                role="menu"
-                aria-label="Menu principal"
-                className="absolute right-0 top-full mt-1 min-w-44 bg-white dark:bg-black border-2 border-black dark:border-white rounded-lg shadow-lg py-1 z-50"
+            {!authLoading && !user ? (
+              <Link
+                to="/connexion"
+                className="px-4 py-2 min-h-touch text-sm font-medium border-2 border-black dark:border-white rounded hover:bg-gray-100 dark:hover:bg-gray-800 focus-visible:outline-none focus-visible:ring focus-visible:ring-offset-2 focus-visible:ring-black dark:focus-visible:ring-white inline-flex items-center"
               >
-                {!authLoading && (user ? (
-                  <>
+                Se connecter
+              </Link>
+            ) : user && (
+              <>
+                <button
+                  ref={menuBtnRef}
+                  onClick={() => setMenuOpen((p) => !p)}
+                  aria-expanded={menuOpen}
+                  aria-controls="header-menu"
+                  aria-haspopup="menu"
+                  className="px-4 py-2 min-h-touch text-sm font-medium border-2 border-black dark:border-white rounded hover:bg-gray-100 dark:hover:bg-gray-800 focus-visible:outline-none focus-visible:ring focus-visible:ring-offset-2 focus-visible:ring-black dark:focus-visible:ring-white inline-flex items-center gap-1"
+                >
+                  Menu
+                  <span aria-hidden="true">{menuOpen ? '▲' : '▼'}</span>
+                </button>
+
+                {menuOpen && (
+                  <div
+                    id="header-menu"
+                    role="menu"
+                    aria-label="Menu principal"
+                    className="absolute right-0 top-full mt-1 min-w-44 bg-white dark:bg-black border-2 border-black dark:border-white rounded-lg shadow-lg py-1 z-50"
+                  >
                     <Link
                       role="menuitem"
                       to="/compte"
@@ -161,18 +176,9 @@ function Layout() {
                     >
                       Déconnexion
                     </button>
-                  </>
-                ) : (
-                  <Link
-                    role="menuitem"
-                    to="/connexion"
-                    onClick={closeMenu}
-                    className="block px-4 py-3 text-sm hover:bg-gray-100 dark:hover:bg-gray-800 focus-visible:outline-none focus-visible:ring focus-visible:ring-inset focus-visible:ring-black dark:focus-visible:ring-white"
-                  >
-                    Se connecter
-                  </Link>
-                ))}
-              </div>
+                  </div>
+                )}
+              </>
             )}
           </div>
         </div>

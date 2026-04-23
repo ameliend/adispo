@@ -24,6 +24,7 @@ export default function ContentDetailPage() {
   const [localCounts, setLocalCounts] = useState({})
 
   const reportButtonRefs = useRef({})
+  const backBtnRef = useRef(null)
 
   useEffect(() => {
     if (!content) {
@@ -34,11 +35,9 @@ export default function ContentDetailPage() {
     }
   }, [id]) // eslint-disable-line react-hooks/exhaustive-deps
 
-  const titleRef = useRef(null)
-
   useEffect(() => {
     if (!isLoading && content) {
-      titleRef.current?.focus()
+      requestAnimationFrame(() => backBtnRef.current?.focus())
     }
   }, [isLoading, content])
 
@@ -69,6 +68,7 @@ export default function ContentDetailPage() {
   return (
     <section aria-labelledby="content-detail-title">
       <button
+        ref={backBtnRef}
         onClick={() => navigate(-1)}
         className="mb-6 text-sm font-medium underline hover:no-underline focus-visible:outline-none focus-visible:ring focus-visible:ring-offset-2 focus-visible:ring-black dark:focus-visible:ring-white"
       >
@@ -88,9 +88,7 @@ export default function ContentDetailPage() {
         <div className="flex-1 min-w-0">
           <h2
             id="content-detail-title"
-            ref={titleRef}
-            tabIndex={-1}
-            className="text-2xl font-bold mb-2 focus-visible:outline-none"
+            className="text-2xl font-bold mb-2"
           >
             {content.title}
             {content.year && (

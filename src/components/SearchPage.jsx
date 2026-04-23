@@ -279,7 +279,7 @@ export default function SearchPage() {
               value={platform}
               onChange={(e) => setPlatform(e.target.value)}
               aria-describedby="browse-status"
-              className="w-full px-3 py-2 min-h-touch border-2 border-black dark:border-white rounded bg-white dark:bg-gray-900 text-base focus-visible:outline-none focus-visible:ring focus-visible:ring-offset-2 focus-visible:ring-black dark:focus-visible:ring-white"
+              className="w-full px-3 py-2 min-h-touch border-2 border-black dark:border-white rounded bg-white dark:bg-gray-900 text-base focus:outline-none focus:ring focus:ring-offset-2 focus:ring-black dark:focus:ring-white"
             >
               {PLATFORMS.map((p) => (
                 <option key={p.value} value={p.value}>
@@ -298,7 +298,7 @@ export default function SearchPage() {
               value={genre}
               onChange={(e) => setGenre(e.target.value)}
               aria-describedby="browse-status"
-              className="w-full px-3 py-2 min-h-touch border-2 border-black dark:border-white rounded bg-white dark:bg-gray-900 text-base focus-visible:outline-none focus-visible:ring focus-visible:ring-offset-2 focus-visible:ring-black dark:focus-visible:ring-white"
+              className="w-full px-3 py-2 min-h-touch border-2 border-black dark:border-white rounded bg-white dark:bg-gray-900 text-base focus:outline-none focus:ring focus:ring-offset-2 focus:ring-black dark:focus:ring-white"
             >
               {GENRES.map((g) => (
                 <option key={g.value} value={g.value}>
