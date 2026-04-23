@@ -17,11 +17,11 @@ export default function AddTitlePage() {
     }
   }, [authLoading, user, navigate])
 
-  const [step, setStep] = useState(initialTitle ? 2 : 1)
-  const [tmdbQuery, setTmdbQuery] = useState('')
+  const [step, setStep] = useState(1)
+  const [tmdbQuery, setTmdbQuery] = useState(initialTitle || '')
   const [tmdbResults, setTmdbResults] = useState([])
   const [tmdbStatusMsg, setTmdbStatusMsg] = useState('')
-  const [selectedTitle, setSelectedTitle] = useState(initialTitle ? { title: initialTitle } : null)
+  const [selectedTitle, setSelectedTitle] = useState(null)
   const [selectedPlatforms, setSelectedPlatforms] = useState([])
   const [platformLinks, setPlatformLinks] = useState({})
   const [isSubmitting, setIsSubmitting] = useState(false)
