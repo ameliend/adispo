@@ -129,7 +129,8 @@ export default function AddTitlePage() {
     setIsSubmitting(false)
 
     if (error) {
-      setSubmitError("Une erreur est survenue lors de l'envoi. Veuillez réessayer.")
+      console.error('[AddTitlePage] submit error:', error)
+      setSubmitError(`Une erreur est survenue lors de l'envoi. Veuillez réessayer. (${error.message || error.code || 'inconnu'})`)
       return
     }
 
