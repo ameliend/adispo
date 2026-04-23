@@ -146,24 +146,38 @@ export async function submitContribution(payload) {
 export async function submitNewTitle(contentData, platforms, platformLinks = {}) {
   try {
     // Upsert content
-    const { data: content, error: contentError } = await supabase
-      .from('contents')
-      .upsert(
-        {
-          tmdb_id: contentData.tmdbId,
-          title: contentData.title,
-          year: contentData.year || null,
-          genre: contentData.genre || null,
-          type: contentData.type || null,
-          synopsis: contentData.synopsis || null,
-          poster_path: contentData.posterPath || null,
-        },
-        { onConflict: 'tmdb_id' }
-      )
-      .select()
-      .single()
+    const upsertData = {
+      title: contentData.title,
+      year: contentData.year || null,
+      genre: contentData.genre || null,
+      type: contentData.type || null,
+      synopsis: contentData.synopsis || null,
+      poster_path: contentData.posterPath || null,
+    }
+    if (contentData.tmdbId) upsertData.tmdb_id = contentData.tmdbId
 
-    if (contentError) return { data: null, error: contentError }
+    let contentResult
+    if (contentData.tmdbId) {
+      const res = await supabase
+        .from('contents')
+        .upsert(upsertData, { onConflict: 'tmdb_id' })
+        .select()
+        .single()
+      contentResult = res
+    } else {
+      const res = await supabase
+        .from('contents')
+        .insert(upsertData)
+        .select()
+        .single()
+      contentResult = res
+    }
+
+    const { data: content, error: contentError } = contentResult
+    if (contentError) {
+      console.error('[submitNewTitle] contents error:', contentError)
+      return { data: null, error: contentError }
+    }
 
     // Upsert ad_status for each platform
     const adRows = platforms.map((platform) => ({
@@ -179,9 +193,12 @@ export async function submitNewTitle(contentData, platforms, platformLinks = {})
       .from('ad_status')
       .upsert(adRows, { onConflict: 'content_id,platform' })
 
-    if (adError) return { data: null, error: adError }
+    if (adError) {
+      console.error('[submitNewTitle] ad_status error:', adError)
+      return { data: null, error: adError }
+    }
 
-    // Insert contributions as approved so they appear in recent additions
+    // Insert contributions for "recent additions" display — non-blocking
     const contributions = platforms.map((platform) => ({
       content_id: content.id,
       platform,
@@ -189,13 +206,17 @@ export async function submitNewTitle(contentData, platforms, platformLinks = {})
       moderation_status: 'approved',
     }))
 
-    const { data, error } = await supabase
+    const { error: contribError } = await supabase
       .from('contributions')
       .insert(contributions)
-      .select()
 
-    return { data, error }
+    if (contribError) {
+      console.warn('[submitNewTitle] contributions insert failed (non-blocking):', contribError)
+    }
+
+    return { data: content, error: null }
   } catch (err) {
+    console.error('[submitNewTitle] unexpected error:', err)
     return { data: null, error: err }
   }
 }
@@ -289,6 +310,71 @@ export async function getRandomByPlatform(platform, limit = 10) {
   } catch (err) {
     return { data: null, error: err }
   }
+}
+
+export async function updateEmail(newEmail) {
+  const { data, error } = await supabase.auth.updateUser({ email: newEmail })
+  return { data, error }
+}
+
+export async function updatePassword(newPassword) {
+  const { data, error } = await supabase.auth.updateUser({ password: newPassword })
+  return { data, error }
+}
+
+// ── Auth ─────────────────────────────────────────────────────────────────────
+
+export async function signUp(email, password) {
+  const { data, error } = await supabase.auth.signUp({ email, password })
+  return { data, error }
+}
+
+export async function signIn(email, password) {
+  const { data, error } = await supabase.auth.signInWithPassword({ email, password })
+  return { data, error }
+}
+
+export async function signOut() {
+  const { error } = await supabase.auth.signOut()
+  return { error }
+}
+
+export async function verifyOtp(tokenHash, type) {
+  const { data, error } = await supabase.auth.verifyOtp({ token_hash: tokenHash, type })
+  return { data, error }
+}
+
+// ── Playlist ──────────────────────────────────────────────────────────────────
+
+export async function getPlaylist(userId) {
+  const { data, error } = await supabase
+    .from('playlists')
+    .select(`
+      id, added_at,
+      contents (id, tmdb_id, title, year, genre, type, poster_path,
+        ad_status (id, platform, status, trust_level, validation_count, lien))
+    `)
+    .eq('user_id', userId)
+    .order('added_at', { ascending: false })
+  return { data, error }
+}
+
+export async function addToPlaylist(userId, contentId) {
+  const { data, error } = await supabase
+    .from('playlists')
+    .insert({ user_id: userId, content_id: contentId })
+    .select()
+    .single()
+  return { data, error }
+}
+
+export async function removeFromPlaylist(userId, contentId) {
+  const { error } = await supabase
+    .from('playlists')
+    .delete()
+    .eq('user_id', userId)
+    .eq('content_id', contentId)
+  return { error }
 }
 
 export async function getContentsByPlatform(platform) {

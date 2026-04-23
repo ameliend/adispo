@@ -27,7 +27,7 @@ const GENRES = [
 export default function SearchPage() {
   const navigate = useNavigate()
   const location = useLocation()
-  const { announce } = useOutletContext()
+  const { announce, user } = useOutletContext()
   const initialTitle = location.state?.initialTitle || ''
   useEffect(() => { document.title = 'Rechercher — ADispo' }, [])
 
@@ -236,12 +236,25 @@ export default function SearchPage() {
               Vous connaissez une plateforme qui le propose ?{' '}
               Ajoutez-la.
             </p>
-            <button
-              onClick={() => navigate('/ajouter', { state: { initialTitle: selectedTmdb?.title || null } })}
-              className="px-6 py-3 min-h-touch bg-black dark:bg-white text-white dark:text-black font-medium rounded hover:bg-gray-800 dark:hover:bg-gray-200 focus-visible:outline-none focus-visible:ring focus-visible:ring-offset-2 focus-visible:ring-black dark:focus-visible:ring-white"
-            >
-              Ajouter ce contenu
-            </button>
+            {user ? (
+              <button
+                onClick={() => navigate('/ajouter', { state: { selectedTmdb } })}
+                className="px-6 py-3 min-h-touch bg-black dark:bg-white text-white dark:text-black font-medium rounded hover:bg-gray-800 dark:hover:bg-gray-200 focus-visible:outline-none focus-visible:ring focus-visible:ring-offset-2 focus-visible:ring-black dark:focus-visible:ring-white"
+              >
+                Ajouter ce contenu
+              </button>
+            ) : (
+              <p className="text-sm text-gray-600 dark:text-gray-400">
+                <a
+                  href="/connexion"
+                  onClick={(e) => { e.preventDefault(); navigate('/connexion', { state: { from: '/ajouter' } }) }}
+                  className="font-medium underline hover:no-underline focus-visible:outline-none focus-visible:ring focus-visible:ring-offset-2 focus-visible:ring-black dark:focus-visible:ring-white"
+                >
+                  Connectez-vous
+                </a>{' '}
+                pour ajouter ce contenu.
+              </p>
+            )}
           </div>
         )}
       </section>
@@ -266,7 +279,7 @@ export default function SearchPage() {
               value={platform}
               onChange={(e) => setPlatform(e.target.value)}
               aria-describedby="browse-status"
-              className="w-full px-3 py-2 min-h-touch border-2 border-black dark:border-white rounded bg-white dark:bg-gray-900 text-base focus-visible:outline-none focus-visible:ring focus-visible:ring-offset-2 focus-visible:ring-black dark:focus-visible:ring-white"
+              className="w-full px-3 py-2 min-h-touch border-2 border-black dark:border-white rounded bg-white dark:bg-gray-900 text-base focus:outline-none focus:ring focus:ring-offset-2 focus:ring-black dark:focus:ring-white"
             >
               {PLATFORMS.map((p) => (
                 <option key={p.value} value={p.value}>
@@ -285,7 +298,7 @@ export default function SearchPage() {
               value={genre}
               onChange={(e) => setGenre(e.target.value)}
               aria-describedby="browse-status"
-              className="w-full px-3 py-2 min-h-touch border-2 border-black dark:border-white rounded bg-white dark:bg-gray-900 text-base focus-visible:outline-none focus-visible:ring focus-visible:ring-offset-2 focus-visible:ring-black dark:focus-visible:ring-white"
+              className="w-full px-3 py-2 min-h-touch border-2 border-black dark:border-white rounded bg-white dark:bg-gray-900 text-base focus:outline-none focus:ring focus:ring-offset-2 focus:ring-black dark:focus:ring-white"
             >
               {GENRES.map((g) => (
                 <option key={g.value} value={g.value}>

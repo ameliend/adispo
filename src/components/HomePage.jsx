@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { useNavigate, Link } from 'react-router-dom'
+import { useNavigate, Link, useOutletContext } from 'react-router-dom'
 import { getRecentContributions, getRandomByPlatform } from '../lib/supabase.js'
 import { PLATFORM_LABELS } from '../lib/platforms.js'
 import TrustBadge, { getTrustLevel } from './TrustBadge.jsx'
@@ -66,6 +66,7 @@ function PlatformMiniCard({ content }) {
 }
 
 export default function HomePage() {
+  const { user, playlistItems, playlistLoading } = useOutletContext()
   const [recentAdditions, setRecentAdditions] = useState([])
   const [canalContents, setCanalContents] = useState([])
   const [netflixContents, setNetflixContents] = useState([])
@@ -91,6 +92,25 @@ export default function HomePage() {
           Rechercher un titre
         </Link>
       </div>
+
+      {user && !playlistLoading && playlistItems.length > 0 && (
+        <section aria-labelledby="playlist-section-title" className="mb-12">
+          <div className="flex items-baseline justify-between gap-4 mb-4 flex-wrap">
+            <h2 id="playlist-section-title" className="text-xl font-bold">Ma playlist</h2>
+            <Link
+              to="/playlist"
+              className="text-sm font-medium underline hover:no-underline focus-visible:outline-none focus-visible:ring focus-visible:ring-offset-2 focus-visible:ring-black dark:focus-visible:ring-white"
+            >
+              Voir toute ma playlist →
+            </Link>
+          </div>
+          <ul className="space-y-2">
+            {playlistItems.slice(0, 5).map((row) => (
+              <PlatformMiniCard key={row.id} content={row.contents} />
+            ))}
+          </ul>
+        </section>
+      )}
 
       {canalContents.length > 0 && (
         <section aria-labelledby="canal-section-title" className="mb-12">
