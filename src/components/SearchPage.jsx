@@ -238,7 +238,7 @@ export default function SearchPage() {
             </p>
             {user ? (
               <button
-                onClick={() => navigate('/ajouter', { state: { initialTitle: selectedTmdb?.title || null } })}
+                onClick={() => navigate('/ajouter', { state: { selectedTmdb } })}
                 className="px-6 py-3 min-h-touch bg-black dark:bg-white text-white dark:text-black font-medium rounded hover:bg-gray-800 dark:hover:bg-gray-200 focus-visible:outline-none focus-visible:ring focus-visible:ring-offset-2 focus-visible:ring-black dark:focus-visible:ring-white"
               >
                 Ajouter ce contenu

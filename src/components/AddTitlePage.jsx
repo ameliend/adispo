@@ -8,7 +8,7 @@ export default function AddTitlePage() {
   const navigate = useNavigate()
   const location = useLocation()
   const { announce, showToast, user, authLoading } = useOutletContext()
-  const initialTitle = location.state?.initialTitle || null
+  const preselected = location.state?.selectedTmdb || null
   useEffect(() => { document.title = 'Ajouter un titre — ADispo' }, [])
 
   useEffect(() => {
@@ -17,11 +17,11 @@ export default function AddTitlePage() {
     }
   }, [authLoading, user, navigate])
 
-  const [step, setStep] = useState(1)
-  const [tmdbQuery, setTmdbQuery] = useState(initialTitle || '')
+  const [step, setStep] = useState(preselected ? 2 : 1)
+  const [tmdbQuery, setTmdbQuery] = useState('')
   const [tmdbResults, setTmdbResults] = useState([])
   const [tmdbStatusMsg, setTmdbStatusMsg] = useState('')
-  const [selectedTitle, setSelectedTitle] = useState(null)
+  const [selectedTitle, setSelectedTitle] = useState(preselected)
   const [selectedPlatforms, setSelectedPlatforms] = useState([])
   const [platformLinks, setPlatformLinks] = useState({})
   const [isSubmitting, setIsSubmitting] = useState(false)
@@ -333,7 +333,7 @@ export default function AddTitlePage() {
               Suivant
             </button>
             <button
-              onClick={goBackToStep1}
+              onClick={preselected ? () => navigate(-1) : goBackToStep1}
               className="px-6 py-3 min-h-touch border-2 border-black dark:border-white font-medium rounded hover:bg-gray-100 dark:hover:bg-gray-800 focus-visible:outline-none focus-visible:ring focus-visible:ring-offset-2 focus-visible:ring-black dark:focus-visible:ring-white"
             >
               Précédent
