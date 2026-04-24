@@ -88,13 +88,14 @@ async function main() {
 
   console.log(`\n${entries.length} titre(s) à traiter…\n`)
 
-  const sqlParts = [
+  const header = [
     `-- Généré par scripts/generate-sql.js`,
     `-- ${new Date().toISOString()}`,
     `-- Exécuter dans l'éditeur SQL de Supabase`,
     ``,
   ]
 
+  const blocks = [] // un bloc = SQL pour un titre
   const notFound = []
   let ok = 0
 
@@ -136,63 +137,40 @@ async function main() {
     console.log(` ✓  ${title} (${year || '?'}) [tmdb:${tmdbId}]`)
     ok++
 
-    sqlParts.push(`-- ────────────────────────────────────`)
-    sqlParts.push(`-- ${title}${year ? ` (${year})` : ''} — ${platform}`)
-    sqlParts.push(`INSERT INTO contents (tmdb_id, title, year, genre, type, synopsis, poster_path)`)
-    sqlParts.push(`VALUES (${tmdbId}, ${esc(title)}, ${esc(year)}, ${esc(genre)}, ${esc(type)}, ${esc(synopsis)}, ${esc(poster)})`)
-    sqlParts.push(`ON CONFLICT (tmdb_id) DO UPDATE SET`)
-    sqlParts.push(`  title = EXCLUDED.title,`)
-    sqlParts.push(`  year = EXCLUDED.year,`)
-    sqlParts.push(`  genre = EXCLUDED.genre,`)
-    sqlParts.push(`  type = EXCLUDED.type,`)
-    sqlParts.push(`  synopsis = EXCLUDED.synopsis,`)
-    sqlParts.push(`  poster_path = EXCLUDED.poster_path;`)
-    sqlParts.push(``)
-    sqlParts.push(`INSERT INTO ad_status (content_id, platform, status, trust_level, validation_count, lien)`)
-    sqlParts.push(`SELECT id, ${esc(platform)}, 'available', ${esc(trustLevel)}, ${validationCount}, ${esc(lien)}`)
-    sqlParts.push(`FROM contents WHERE tmdb_id = ${tmdbId}`)
-    sqlParts.push(`ON CONFLICT (content_id, platform) DO UPDATE SET`)
-    sqlParts.push(`  status      = 'available',`)
-    sqlParts.push(`  trust_level = EXCLUDED.trust_level,`)
-    sqlParts.push(`  validation_count = EXCLUDED.validation_count,`)
-    sqlParts.push(`  lien        = EXCLUDED.lien;`)
-    sqlParts.push(``)
+    blocks.push([
+      `-- ${title}${year ? ` (${year})` : ''} — ${platform}`,
+      `INSERT INTO contents (tmdb_id, title, year, genre, type, synopsis, poster_path)`,
+      `VALUES (${tmdbId}, ${esc(title)}, ${esc(year)}, ${esc(genre)}, ${esc(type)}, ${esc(synopsis)}, ${esc(poster)})`,
+      `ON CONFLICT (tmdb_id) DO UPDATE SET`,
+      `  title = EXCLUDED.title, year = EXCLUDED.year, genre = EXCLUDED.genre,`,
+      `  type = EXCLUDED.type, synopsis = EXCLUDED.synopsis, poster_path = EXCLUDED.poster_path;`,
+      ``,
+      `INSERT INTO ad_status (content_id, platform, status, trust_level, validation_count, lien)`,
+      `SELECT id, ${esc(platform)}, 'available', ${esc(trustLevel)}, ${validationCount}, ${esc(lien)}`,
+      `FROM contents WHERE tmdb_id = ${tmdbId}`,
+      `ON CONFLICT (content_id, platform) DO UPDATE SET`,
+      `  status = 'available', trust_level = EXCLUDED.trust_level,`,
+      `  validation_count = EXCLUDED.validation_count, lien = EXCLUDED.lien;`,
+      ``,
+    ].join('\n'))
 
-    await new Promise(r => setTimeout(r, 250)) // évite le rate-limit TMDB
+    await new Promise(r => setTimeout(r, 250))
   }
 
   // Découpe en fichiers de 30 titres max (limite SQL editor Supabase)
-  const CHUNK_SIZE = 30
-  const blocks = []
-  let current = []
+  const CHUNK_SIZE = 200
+  const totalFiles = Math.ceil(blocks.length / CHUNK_SIZE)
 
-  for (const line of sqlParts) {
-    if (line.startsWith('-- ──')) {
-      if (current.length) blocks.push(current)
-      current = [line]
-    } else {
-      current.push(line)
-    }
-  }
-  if (current.length) blocks.push(current)
-
-  const header = sqlParts.slice(0, 4) // commentaires d'en-tête
-
-  const chunks = []
   for (let i = 0; i < blocks.length; i += CHUNK_SIZE) {
-    chunks.push(blocks.slice(i, i + CHUNK_SIZE))
+    const chunk = blocks.slice(i, i + CHUNK_SIZE)
+    const fileNum = Math.floor(i / CHUNK_SIZE) + 1
+    const filename = totalFiles === 1 ? 'output.sql' : `output-${fileNum}.sql`
+    const content = [...header, ...chunk].join('\n')
+    writeFileSync(join(__dirname, filename), content)
+    console.log(`📄  scripts/${filename}  (${chunk.length} titres)`)
   }
 
-  if (chunks.length === 1) {
-    const outPath = join(__dirname, 'output.sql')
-    writeFileSync(outPath, [...header, ...chunks[0].flat()].join('\n'))
-    console.log(`\n📄  SQL écrit dans : scripts/output.sql`)
-  } else {
-    chunks.forEach((chunk, i) => {
-      const outPath = join(__dirname, `output-${i + 1}.sql`)
-      writeFileSync(outPath, [...header, '', ...chunk.flat()].join('\n'))
-      console.log(`📄  scripts/output-${i + 1}.sql  (${chunk.length} titres)`)
-    })
+  if (totalFiles > 1) {
     console.log(`\n→ Exécute chaque fichier l'un après l'autre dans Supabase.`)
   }
 
