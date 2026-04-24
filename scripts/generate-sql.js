@@ -161,16 +161,47 @@ async function main() {
     await new Promise(r => setTimeout(r, 250)) // évite le rate-limit TMDB
   }
 
-  const outPath = join(__dirname, 'output.sql')
-  writeFileSync(outPath, sqlParts.join('\n'))
+  // Découpe en fichiers de 30 titres max (limite SQL editor Supabase)
+  const CHUNK_SIZE = 30
+  const blocks = []
+  let current = []
+
+  for (const line of sqlParts) {
+    if (line.startsWith('-- ──')) {
+      if (current.length) blocks.push(current)
+      current = [line]
+    } else {
+      current.push(line)
+    }
+  }
+  if (current.length) blocks.push(current)
+
+  const header = sqlParts.slice(0, 4) // commentaires d'en-tête
+
+  const chunks = []
+  for (let i = 0; i < blocks.length; i += CHUNK_SIZE) {
+    chunks.push(blocks.slice(i, i + CHUNK_SIZE))
+  }
+
+  if (chunks.length === 1) {
+    const outPath = join(__dirname, 'output.sql')
+    writeFileSync(outPath, [...header, ...chunks[0].flat()].join('\n'))
+    console.log(`\n📄  SQL écrit dans : scripts/output.sql`)
+  } else {
+    chunks.forEach((chunk, i) => {
+      const outPath = join(__dirname, `output-${i + 1}.sql`)
+      writeFileSync(outPath, [...header, '', ...chunk.flat()].join('\n'))
+      console.log(`📄  scripts/output-${i + 1}.sql  (${chunk.length} titres)`)
+    })
+    console.log(`\n→ Exécute chaque fichier l'un après l'autre dans Supabase.`)
+  }
 
   console.log(`\n✅  ${ok}/${entries.length} titres traités`)
   if (notFound.length) {
     console.log(`⚠️   Non trouvés (à ajouter manuellement) :`)
     notFound.forEach(t => console.log(`   - ${t}`))
   }
-  console.log(`\n📄  SQL écrit dans : scripts/output.sql`)
-  console.log(`    → Colle le contenu dans l'éditeur SQL de Supabase et exécute.\n`)
+  console.log()
 }
 
 main().catch(err => {
