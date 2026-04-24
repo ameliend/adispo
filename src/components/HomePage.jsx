@@ -70,12 +70,14 @@ export default function HomePage() {
   const [recentAdditions, setRecentAdditions] = useState([])
   const [canalContents, setCanalContents] = useState([])
   const [netflixContents, setNetflixContents] = useState([])
+  const [appleContents, setAppleContents] = useState([])
 
   useEffect(() => {
     document.title = 'ADispo — Audiodescription sur les plateformes de streaming'
     getRecentContributions().then(({ data }) => { if (data) setRecentAdditions(data) })
     getRandomByPlatform('canal', 10).then(({ data }) => { if (data) setCanalContents(data) })
     getRandomByPlatform('netflix', 10).then(({ data }) => { if (data) setNetflixContents(data) })
+    getRandomByPlatform('apple', 10).then(({ data }) => { if (data) setAppleContents(data) })
   }, [])
 
   return (
@@ -144,6 +146,25 @@ export default function HomePage() {
           </div>
           <ul className="space-y-2">
             {netflixContents.map((content) => (
+              <PlatformMiniCard key={content.id} content={content} />
+            ))}
+          </ul>
+        </section>
+      )}
+
+      {appleContents.length > 0 && (
+        <section aria-labelledby="apple-section-title" className="mb-12">
+          <div className="flex items-baseline justify-between gap-4 mb-4 flex-wrap">
+            <h2 id="apple-section-title" className="text-xl font-bold">Apple TV+</h2>
+            <Link
+              to="/plateforme/apple"
+              className="text-sm font-medium underline hover:no-underline focus-visible:outline-none focus-visible:ring focus-visible:ring-offset-2 focus-visible:ring-black dark:focus-visible:ring-white"
+            >
+              Voir tous les contenus →
+            </Link>
+          </div>
+          <ul className="space-y-2">
+            {appleContents.map((content) => (
               <PlatformMiniCard key={content.id} content={content} />
             ))}
           </ul>
