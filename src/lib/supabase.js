@@ -271,6 +271,35 @@ export async function updateAdStatusLink(adStatusId, lien) {
   }
 }
 
+export async function addPlatformToContent(contentId, platform) {
+  try {
+    const { data, error } = await supabase
+      .from('ad_status')
+      .insert({
+        content_id: contentId,
+        platform,
+        status: 'available',
+        trust_level: 'Signalé',
+        validation_count: 1,
+      })
+      .select('id, platform, status, trust_level, validation_count, lien')
+      .single()
+
+    if (!error) {
+      await supabase.from('contributions').insert({
+        content_id: contentId,
+        platform,
+        submitted_at: new Date().toISOString(),
+        moderation_status: 'pending',
+      })
+    }
+
+    return { data, error }
+  } catch (err) {
+    return { data: null, error: err }
+  }
+}
+
 export async function getContentByTmdbId(tmdbId) {
   try {
     const { data, error } = await supabase
