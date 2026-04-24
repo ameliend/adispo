@@ -58,14 +58,14 @@ export default function PlatformPage() {
         <>
           {genres.length > 0 && (
             <div className="mb-4">
-              <label htmlFor="genre-filter" className="text-sm font-medium mr-2">
+              <label htmlFor="platform-genre-filter" className="block text-sm font-medium mb-2">
                 Filtrer par genre
               </label>
               <select
-                id="genre-filter"
+                id="platform-genre-filter"
                 value={genre}
                 onChange={e => setGenre(e.target.value)}
-                className="text-sm border-2 border-black dark:border-white rounded px-2 py-1 bg-white dark:bg-black focus-visible:outline-none focus-visible:ring focus-visible:ring-offset-2 focus-visible:ring-black dark:focus-visible:ring-white"
+                className="w-full max-w-full text-sm border-2 border-black dark:border-white rounded px-3 py-2 min-h-touch bg-white dark:bg-black focus:outline-none focus:ring focus:ring-offset-2 focus:ring-black dark:focus:ring-white"
               >
                 <option value="">Tous les genres</option>
                 {genres.map(g => (
