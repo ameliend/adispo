@@ -22,7 +22,7 @@ export default function ContentDetailPage() {
   const { announce, showToast, user, playlistIds, togglePlaylist } = useOutletContext()
   const isAdmin = user?.email === ADMIN_EMAIL
   const [content, setContent] = useState(location.state?.content || null)
-  const [isLoading, setIsLoading] = useState(!location.state?.content)
+  const [isLoading, setIsLoading] = useState(true)
   const [activeReportId, setActiveReportId] = useState(null)
   const [validatedIds, setValidatedIds] = useState({})
   const [localCounts, setLocalCounts] = useState({})
@@ -31,13 +31,11 @@ export default function ContentDetailPage() {
   const backBtnRef = useRef(null)
 
   useEffect(() => {
-    if (!content) {
-      getContentById(id).then(({ data }) => {
-        setContent(data)
-        setIsLoading(false)
-      })
-    }
-  }, [id]) // eslint-disable-line react-hooks/exhaustive-deps
+    getContentById(id).then(({ data }) => {
+      if (data) setContent(data)
+      setIsLoading(false)
+    })
+  }, [id])
 
   useEffect(() => {
     if (!isLoading && content) {
