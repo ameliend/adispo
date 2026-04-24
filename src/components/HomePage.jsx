@@ -101,6 +101,7 @@ export default function HomePage() {
             <h2 id="playlist-section-title" className="text-xl font-bold">Ma playlist</h2>
             <Link
               to="/playlist"
+              aria-label="Voir toute ma playlist"
               className="text-sm font-medium underline hover:no-underline focus-visible:outline-none focus-visible:ring focus-visible:ring-offset-2 focus-visible:ring-black dark:focus-visible:ring-white"
             >
               Voir toute ma playlist →
@@ -120,6 +121,7 @@ export default function HomePage() {
             <h2 id="canal-section-title" className="text-xl font-bold">CANAL+</h2>
             <Link
               to="/plateforme/canal"
+              aria-label="Voir tous les contenus sur CANAL+"
               className="text-sm font-medium underline hover:no-underline focus-visible:outline-none focus-visible:ring focus-visible:ring-offset-2 focus-visible:ring-black dark:focus-visible:ring-white"
             >
               Voir tous les contenus →
@@ -139,6 +141,7 @@ export default function HomePage() {
             <h2 id="netflix-section-title" className="text-xl font-bold">Netflix</h2>
             <Link
               to="/plateforme/netflix"
+              aria-label="Voir tous les contenus sur Netflix"
               className="text-sm font-medium underline hover:no-underline focus-visible:outline-none focus-visible:ring focus-visible:ring-offset-2 focus-visible:ring-black dark:focus-visible:ring-white"
             >
               Voir tous les contenus →
@@ -158,6 +161,7 @@ export default function HomePage() {
             <h2 id="apple-section-title" className="text-xl font-bold">Apple TV+</h2>
             <Link
               to="/plateforme/apple"
+              aria-label="Voir tous les contenus sur Apple TV+"
               className="text-sm font-medium underline hover:no-underline focus-visible:outline-none focus-visible:ring focus-visible:ring-offset-2 focus-visible:ring-black dark:focus-visible:ring-white"
             >
               Voir tous les contenus →
