@@ -36,6 +36,16 @@ const PLATFORM_MAP = {
   'apple tv+': 'apple', 'apple': 'apple',
 }
 
+const TRUST_LEVEL_MAP = {
+  'signalé': 'Signalé', 'signale': 'Signalé',
+  'confirmé': 'Confirmé', 'confirme': 'Confirmé',
+  'fiable': 'Fiable',
+}
+
+function normalizeTrustLevel(t) {
+  return TRUST_LEVEL_MAP[t?.toLowerCase()] || 'Signalé'
+}
+
 function normalizePlatform(p) {
   return PLATFORM_MAP[p?.toLowerCase()] || null
 }
@@ -130,7 +140,7 @@ async function main() {
     const synopsis = details.overview || null
     const poster  = details.poster_path || null
     const tmdbId  = result.id
-    const trustLevel = entry.trust_level || 'Signalé'
+    const trustLevel = normalizeTrustLevel(entry.trust_level)
     const validationCount = entry.validation_count ?? 1
     const lien    = entry.link || null
 
