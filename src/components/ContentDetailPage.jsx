@@ -2,7 +2,7 @@ import { useEffect, useRef, useState } from 'react'
 import { useNavigate, useLocation, useParams, useOutletContext, Link } from 'react-router-dom'
 import TrustBadge from './TrustBadge.jsx'
 import ContributionForm from './ContributionForm.jsx'
-import { incrementValidation, getContentById } from '../lib/supabase.js'
+import { incrementValidation, getContentById, updateAdStatusLink } from '../lib/supabase.js'
 import { PLATFORM_LABELS } from '../lib/platforms.js'
 import { posterUrl } from '../lib/tmdb.js'
 import AdminEditContent from './AdminEditContent.jsx'
@@ -26,6 +26,9 @@ export default function ContentDetailPage() {
   const [activeReportId, setActiveReportId] = useState(null)
   const [validatedIds, setValidatedIds] = useState({})
   const [localCounts, setLocalCounts] = useState({})
+  const [editingLinkId, setEditingLinkId] = useState(null)
+  const [linkDraft, setLinkDraft] = useState({})
+  const [linkSaving, setLinkSaving] = useState({})
 
   const reportButtonRefs = useRef({})
   const backBtnRef = useRef(null)
@@ -61,6 +64,23 @@ export default function ContentDetailPage() {
             (adStatuses.find((s) => s.id === statusId)?.validation_count ?? 0)) + 1,
       }))
       announce(`Merci pour votre validation sur ${PLATFORM_LABELS[platform] || platform}.`)
+    }
+  }
+
+  async function handleSaveLink(statusId) {
+    setLinkSaving((prev) => ({ ...prev, [statusId]: true }))
+    const url = linkDraft[statusId] ?? ''
+    const { error } = await updateAdStatusLink(statusId, url.trim() || null)
+    setLinkSaving((prev) => ({ ...prev, [statusId]: false }))
+    if (!error) {
+      setContent((c) => ({
+        ...c,
+        ad_status: c.ad_status.map((s) =>
+          s.id === statusId ? { ...s, lien: url.trim() || null } : s
+        ),
+      }))
+      setEditingLinkId(null)
+      showToast('Lien mis à jour.')
     }
   }
 
@@ -145,6 +165,7 @@ export default function ContentDetailPage() {
               const count = localCounts[status.id] ?? status.validation_count ?? 0
               const validated = validatedIds[status.id]
               const isReportOpen = activeReportId === status.id
+              const isEditingLink = editingLinkId === status.id
               const platformName = PLATFORM_LABELS[status.platform] || status.platform
 
               return (
@@ -215,7 +236,61 @@ export default function ContentDetailPage() {
                         </button>
                       </>
                     )}
+
+                    {isAdmin && (
+                      <button
+                        aria-label={`Modifier l'URL pour ${platformName}`}
+                        aria-expanded={isEditingLink}
+                        onClick={() => {
+                          if (isEditingLink) {
+                            setEditingLinkId(null)
+                          } else {
+                            setLinkDraft((prev) => ({ ...prev, [status.id]: status.lien || '' }))
+                            setEditingLinkId(status.id)
+                          }
+                        }}
+                        className="px-4 py-2 min-h-touch text-sm font-medium underline hover:no-underline focus-visible:outline-none focus-visible:ring focus-visible:ring-offset-2 focus-visible:ring-black dark:focus-visible:ring-white"
+                      >
+                        {status.lien ? "Modifier l'URL" : "Ajouter une URL"}
+                      </button>
+                    )}
                   </div>
+
+                  {isAdmin && isEditingLink && (
+                    <div className="mt-4 flex flex-col gap-2">
+                      <label
+                        htmlFor={`link-input-${status.id}`}
+                        className="text-sm font-medium"
+                      >
+                        URL pour {platformName}
+                      </label>
+                      <input
+                        id={`link-input-${status.id}`}
+                        type="url"
+                        value={linkDraft[status.id] ?? ''}
+                        onChange={(e) =>
+                          setLinkDraft((prev) => ({ ...prev, [status.id]: e.target.value }))
+                        }
+                        placeholder="https://…"
+                        className="w-full px-3 py-2 min-h-touch border-2 border-black dark:border-white rounded bg-white dark:bg-gray-900 text-sm focus-visible:outline-none focus-visible:ring focus-visible:ring-offset-2 focus-visible:ring-black dark:focus-visible:ring-white"
+                      />
+                      <div className="flex gap-3">
+                        <button
+                          disabled={linkSaving[status.id]}
+                          onClick={() => handleSaveLink(status.id)}
+                          className="px-4 py-2 min-h-touch text-sm font-medium bg-black dark:bg-white text-white dark:text-black rounded hover:bg-gray-800 dark:hover:bg-gray-200 focus-visible:outline-none focus-visible:ring focus-visible:ring-offset-2 focus-visible:ring-black dark:focus-visible:ring-white disabled:opacity-60"
+                        >
+                          {linkSaving[status.id] ? 'Enregistrement…' : 'Enregistrer'}
+                        </button>
+                        <button
+                          onClick={() => setEditingLinkId(null)}
+                          className="px-4 py-2 min-h-touch text-sm font-medium underline hover:no-underline focus-visible:outline-none focus-visible:ring focus-visible:ring-offset-2 focus-visible:ring-black dark:focus-visible:ring-white"
+                        >
+                          Annuler
+                        </button>
+                      </div>
+                    </div>
+                  )}
 
                   {isReportOpen && (
                     <ContributionForm

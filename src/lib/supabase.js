@@ -259,6 +259,18 @@ export async function getContentById(id) {
   }
 }
 
+export async function updateAdStatusLink(adStatusId, lien) {
+  try {
+    const { error } = await supabase
+      .from('ad_status')
+      .update({ lien: lien || null })
+      .eq('id', adStatusId)
+    return { error }
+  } catch (err) {
+    return { error: err }
+  }
+}
+
 export async function getContentByTmdbId(tmdbId) {
   try {
     const { data, error } = await supabase
