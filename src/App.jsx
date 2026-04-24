@@ -115,16 +115,27 @@ function Layout() {
             <Link
               to="/"
               aria-label="Accueil ADispo"
-              className="focus-visible:outline-none focus-visible:ring focus-visible:ring-offset-2 focus-visible:ring-black dark:focus-visible:ring-white rounded inline-flex items-center"
+              className="focus-visible:outline-none focus-visible:ring focus-visible:ring-offset-2 focus-visible:ring-black dark:focus-visible:ring-white rounded inline-flex items-center gap-2"
             >
               <svg
                 aria-hidden="true"
                 focusable="false"
-                viewBox="0 0 110 30"
-                className="fill-current h-7 w-auto"
+                viewBox="0 0 760 400"
+                className="fill-current h-7 w-auto flex-shrink-0"
               >
-                <text x="0" y="24" fontSize="26" fontWeight="700" fontFamily="system-ui,-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif">ADispo</text>
+                <path d="M 40 340 L 126 60 L 210 60 L 296 340 L 228 340 L 210 280 L 126 280 L 108 340 Z M 142 228 L 194 228 L 168 128 Z"/>
+                <path d="M 312 60 L 404 60 C 478 60 526 116 526 200 C 526 284 478 340 404 340 L 312 340 Z M 372 118 L 372 282 L 402 282 C 440 282 466 250 466 200 C 466 150 440 118 402 118 Z"/>
+                <path d="M 536 140 C 564 170 564 230 536 260 L 558 260 C 584 230 584 170 558 140 Z"/>
+                <path d="M 596 108 C 634 148 634 252 596 292 L 618 292 C 654 252 654 148 618 108 Z"/>
+                <path d="M 656 76 C 704 128 704 272 656 324 L 678 324 C 724 272 724 128 678 76 Z"/>
               </svg>
+              <span
+                aria-hidden="true"
+                style={{ fontFamily: "'Archivo', sans-serif", letterSpacing: '-0.1em', lineHeight: 1 }}
+                className="text-2xl"
+              >
+                <span style={{ fontWeight: 900 }}>AD</span><span style={{ fontWeight: 600 }}>ispo</span>
+              </span>
             </Link>
             {' '}
             <span className="text-base font-normal text-gray-700 dark:text-gray-300 hidden sm:inline">
