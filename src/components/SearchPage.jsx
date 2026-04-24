@@ -270,7 +270,7 @@ export default function SearchPage() {
           aria-label="Filtres de recherche"
           className="flex flex-col sm:flex-row gap-4 mb-6"
         >
-          <div className="flex-1">
+          <div className="flex-1 min-w-0">
             <label htmlFor="platform-filter" className="block mb-2 font-medium">
               Plateforme
             </label>
@@ -279,7 +279,7 @@ export default function SearchPage() {
               value={platform}
               onChange={(e) => setPlatform(e.target.value)}
               aria-describedby="browse-status"
-              className="w-full px-3 py-2 min-h-touch border-2 border-black dark:border-white rounded bg-white dark:bg-gray-900 text-base focus:outline-none focus:ring focus:ring-offset-2 focus:ring-black dark:focus:ring-white"
+              className="w-full max-w-full px-3 py-2 min-h-touch border-2 border-black dark:border-white rounded bg-white dark:bg-gray-900 text-base focus:outline-none focus:ring focus:ring-offset-2 focus:ring-black dark:focus:ring-white"
             >
               {PLATFORMS.map((p) => (
                 <option key={p.value} value={p.value}>
@@ -289,7 +289,7 @@ export default function SearchPage() {
             </select>
           </div>
 
-          <div className="flex-1">
+          <div className="flex-1 min-w-0">
             <label htmlFor="genre-filter" className="block mb-2 font-medium">
               Genre
             </label>
@@ -298,7 +298,7 @@ export default function SearchPage() {
               value={genre}
               onChange={(e) => setGenre(e.target.value)}
               aria-describedby="browse-status"
-              className="w-full px-3 py-2 min-h-touch border-2 border-black dark:border-white rounded bg-white dark:bg-gray-900 text-base focus:outline-none focus:ring focus:ring-offset-2 focus:ring-black dark:focus:ring-white"
+              className="w-full max-w-full px-3 py-2 min-h-touch border-2 border-black dark:border-white rounded bg-white dark:bg-gray-900 text-base focus:outline-none focus:ring focus:ring-offset-2 focus:ring-black dark:focus:ring-white"
             >
               {GENRES.map((g) => (
                 <option key={g.value} value={g.value}>
