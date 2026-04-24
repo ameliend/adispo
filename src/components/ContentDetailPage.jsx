@@ -5,6 +5,9 @@ import ContributionForm from './ContributionForm.jsx'
 import { incrementValidation, getContentById } from '../lib/supabase.js'
 import { PLATFORM_LABELS } from '../lib/platforms.js'
 import { posterUrl } from '../lib/tmdb.js'
+import AdminEditContent from './AdminEditContent.jsx'
+
+const ADMIN_EMAIL = 'amelien.delahaie@gmail.com'
 
 const STATUS_LABELS = {
   available: 'Audiodescription disponible',
@@ -16,7 +19,8 @@ export default function ContentDetailPage() {
   const navigate = useNavigate()
   const location = useLocation()
   const { id } = useParams()
-  const { announce, user, playlistIds, togglePlaylist } = useOutletContext()
+  const { announce, showToast, user, playlistIds, togglePlaylist } = useOutletContext()
+  const isAdmin = user?.email === ADMIN_EMAIL
   const [content, setContent] = useState(location.state?.content || null)
   const [isLoading, setIsLoading] = useState(!location.state?.content)
   const [activeReportId, setActiveReportId] = useState(null)
@@ -242,6 +246,13 @@ export default function ContentDetailPage() {
             </p>
           )}
         </>
+      )}
+      {isAdmin && (
+        <AdminEditContent
+          contentId={content.id}
+          onUpdate={(updated) => setContent(c => ({ ...c, ...updated }))}
+          showToast={showToast}
+        />
       )}
     </section>
   )

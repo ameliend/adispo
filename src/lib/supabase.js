@@ -221,6 +221,28 @@ export async function submitNewTitle(contentData, platforms, platformLinks = {})
   }
 }
 
+export async function updateContent(contentId, tmdbData) {
+  try {
+    const { data, error } = await supabase
+      .from('contents')
+      .update({
+        tmdb_id: tmdbData.tmdbId,
+        title: tmdbData.title,
+        year: tmdbData.year || null,
+        genre: tmdbData.genre || null,
+        type: tmdbData.type || null,
+        synopsis: tmdbData.synopsis || null,
+        poster_path: tmdbData.posterPath || null,
+      })
+      .eq('id', contentId)
+      .select()
+      .single()
+    return { data, error }
+  } catch (err) {
+    return { data: null, error: err }
+  }
+}
+
 export async function getContentById(id) {
   try {
     const { data, error } = await supabase
