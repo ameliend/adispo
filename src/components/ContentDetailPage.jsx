@@ -2,8 +2,8 @@ import { useEffect, useRef, useState } from 'react'
 import { useNavigate, useLocation, useParams, useOutletContext, Link } from 'react-router-dom'
 import TrustBadge from './TrustBadge.jsx'
 import ContributionForm from './ContributionForm.jsx'
-import { incrementValidation, getContentById, updateAdStatusLink } from '../lib/supabase.js'
-import { PLATFORM_LABELS } from '../lib/platforms.js'
+import { incrementValidation, getContentById, updateAdStatusLink, addPlatformToContent } from '../lib/supabase.js'
+import { PLATFORMS, PLATFORM_LABELS } from '../lib/platforms.js'
 import { posterUrl } from '../lib/tmdb.js'
 import AdminEditContent from './AdminEditContent.jsx'
 
@@ -29,6 +29,10 @@ export default function ContentDetailPage() {
   const [editingLinkId, setEditingLinkId] = useState(null)
   const [linkDraft, setLinkDraft] = useState({})
   const [linkSaving, setLinkSaving] = useState({})
+  const [addingPlatform, setAddingPlatform] = useState(false)
+  const [newPlatform, setNewPlatform] = useState('')
+  const [addingPlatformSaving, setAddingPlatformSaving] = useState(false)
+  const [addPlatformError, setAddPlatformError] = useState('')
 
   const reportButtonRefs = useRef({})
   const backBtnRef = useRef(null)
@@ -65,6 +69,22 @@ export default function ContentDetailPage() {
       }))
       announce(`Merci pour votre validation sur ${PLATFORM_LABELS[platform] || platform}.`)
     }
+  }
+
+  async function handleAddPlatform() {
+    if (!newPlatform) return
+    setAddingPlatformSaving(true)
+    setAddPlatformError('')
+    const { data, error } = await addPlatformToContent(content.id, newPlatform)
+    setAddingPlatformSaving(false)
+    if (error) {
+      setAddPlatformError('Une erreur est survenue. Veuillez réessayer.')
+      return
+    }
+    setContent((c) => ({ ...c, ad_status: [...(c.ad_status || []), data] }))
+    setAddingPlatform(false)
+    setNewPlatform('')
+    announce(`${PLATFORM_LABELS[newPlatform] || newPlatform} ajouté.`)
   }
 
   async function handleSaveLink(statusId) {
@@ -305,6 +325,65 @@ export default function ContentDetailPage() {
               )
             })}
           </ul>
+
+          {user && (() => {
+            const existingPlatforms = new Set(adStatuses.map((s) => s.platform))
+            const availablePlatforms = PLATFORMS.filter((p) => !existingPlatforms.has(p.value))
+            if (availablePlatforms.length === 0) return null
+            return (
+              <div className="mt-4">
+                {!addingPlatform ? (
+                  <button
+                    onClick={() => {
+                      setNewPlatform(availablePlatforms[0].value)
+                      setAddingPlatform(true)
+                    }}
+                    className="text-sm font-medium underline hover:no-underline focus-visible:outline-none focus-visible:ring focus-visible:ring-offset-2 focus-visible:ring-black dark:focus-visible:ring-white"
+                  >
+                    + Ajouter une plateforme
+                  </button>
+                ) : (
+                  <div className="flex flex-col gap-3 p-4 border-2 border-gray-200 dark:border-gray-700 rounded-lg">
+                    <div>
+                      <label htmlFor="new-platform-select" className="block text-sm font-medium mb-2">
+                        Plateforme
+                      </label>
+                      <select
+                        id="new-platform-select"
+                        value={newPlatform}
+                        onChange={(e) => setNewPlatform(e.target.value)}
+                        className="w-full max-w-xs px-3 py-2 min-h-touch border-2 border-black dark:border-white rounded bg-white dark:bg-gray-900 text-sm focus:outline-none focus:ring focus:ring-offset-2 focus:ring-black dark:focus:ring-white"
+                      >
+                        {availablePlatforms.map((p) => (
+                          <option key={p.value} value={p.value}>{p.label}</option>
+                        ))}
+                      </select>
+                    </div>
+                    {addPlatformError && (
+                      <p role="alert" className="text-sm text-red-700 dark:text-red-400">
+                        {addPlatformError}
+                      </p>
+                    )}
+                    <div className="flex gap-3">
+                      <button
+                        disabled={addingPlatformSaving}
+                        onClick={handleAddPlatform}
+                        className="px-4 py-2 min-h-touch text-sm font-medium bg-black dark:bg-white text-white dark:text-black rounded hover:bg-gray-800 dark:hover:bg-gray-200 focus-visible:outline-none focus-visible:ring focus-visible:ring-offset-2 focus-visible:ring-black dark:focus-visible:ring-white disabled:opacity-60"
+                      >
+                        {addingPlatformSaving ? 'Envoi…' : 'Confirmer'}
+                      </button>
+                      <button
+                        onClick={() => { setAddingPlatform(false); setAddPlatformError('') }}
+                        className="px-4 py-2 min-h-touch text-sm font-medium underline hover:no-underline focus-visible:outline-none focus-visible:ring focus-visible:ring-offset-2 focus-visible:ring-black dark:focus-visible:ring-white"
+                      >
+                        Annuler
+                      </button>
+                    </div>
+                  </div>
+                )}
+              </div>
+            )
+          })()}
 
           {!user && (
             <p className="mt-4 text-sm text-gray-600 dark:text-gray-400">
