@@ -158,7 +158,7 @@ async function main() {
   }
 
   // Découpe en fichiers de 30 titres max (limite SQL editor Supabase)
-  const CHUNK_SIZE = 30
+  const CHUNK_SIZE = 200
   const totalFiles = Math.ceil(blocks.length / CHUNK_SIZE)
 
   for (let i = 0; i < blocks.length; i += CHUNK_SIZE) {
