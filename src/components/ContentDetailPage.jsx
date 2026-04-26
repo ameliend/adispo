@@ -168,37 +168,21 @@ export default function ContentDetailPage() {
                   key={status.id}
                   className="p-4 border-2 border-gray-200 dark:border-gray-700 rounded-lg"
                 >
-                  {/* Header row: platform name + badge + report button */}
-                  <div className="flex items-center justify-between gap-3 mb-3">
-                    <div className="flex items-center gap-2 flex-wrap">
-                      <span className="text-base font-semibold">{platformName}</span>
-                      {isReported && (
-                        <span
-                          aria-label="Signalé : l'audiodescription serait potentiellement indisponible"
-                          className="inline-flex items-center px-2 py-0.5 rounded text-xs font-semibold bg-red-600 text-white"
-                        >
-                          Signalé
-                        </span>
-                      )}
-                    </div>
-
-                    {user && (
-                      <button
-                        ref={(el) => { reportButtonRefs.current[status.id] = el }}
-                        aria-label="Signaler l'absence d'audiodescription"
-                        aria-expanded={isReportOpen}
-                        onClick={() =>
-                          isReportOpen ? setActiveReportId(null) : setActiveReportId(status.id)
-                        }
-                        className="flex-shrink-0 w-10 h-10 flex items-center justify-center rounded hover:bg-gray-100 dark:hover:bg-gray-800 focus-visible:outline-none focus-visible:ring focus-visible:ring-offset-2 focus-visible:ring-black dark:focus-visible:ring-white text-gray-500 dark:text-gray-400 text-lg leading-none"
+                  {/* Platform name + badge */}
+                  <div className="flex items-center gap-2 flex-wrap mb-3">
+                    <span className="text-base font-semibold">{platformName}</span>
+                    {isReported && (
+                      <span
+                        aria-label="Signalé : l'audiodescription serait potentiellement indisponible"
+                        className="inline-flex items-center px-2 py-0.5 rounded text-xs font-semibold bg-red-600 text-white"
                       >
-                        <span aria-hidden="true">•••</span>
-                      </button>
+                        Signalé
+                      </span>
                     )}
                   </div>
 
-                  {/* Actions row */}
-                  <div className="flex flex-wrap gap-3">
+                  {/* Actions row: Voir sur → lien → ••• */}
+                  <div className="flex flex-wrap items-center gap-3">
                     {status.lien && (
                       <a
                         href={status.lien}
@@ -244,6 +228,20 @@ export default function ContentDetailPage() {
                         className="px-4 py-2 min-h-touch text-sm font-medium underline hover:no-underline focus-visible:outline-none focus-visible:ring focus-visible:ring-offset-2 focus-visible:ring-black dark:focus-visible:ring-white"
                       >
                         Modifier l'URL
+                      </button>
+                    )}
+
+                    {user && (
+                      <button
+                        ref={(el) => { reportButtonRefs.current[status.id] = el }}
+                        aria-label="Signaler l'absence d'audiodescription"
+                        aria-expanded={isReportOpen}
+                        onClick={() =>
+                          isReportOpen ? setActiveReportId(null) : setActiveReportId(status.id)
+                        }
+                        className="flex-shrink-0 w-10 h-10 flex items-center justify-center rounded hover:bg-gray-100 dark:hover:bg-gray-800 focus-visible:outline-none focus-visible:ring focus-visible:ring-offset-2 focus-visible:ring-black dark:focus-visible:ring-white text-gray-500 dark:text-gray-400 text-lg leading-none"
+                      >
+                        <span aria-hidden="true">•••</span>
                       </button>
                     )}
                   </div>
