@@ -1,19 +1,12 @@
 import { useEffect, useRef, useState } from 'react'
 import { useNavigate, useLocation, useParams, useOutletContext, Link } from 'react-router-dom'
-import TrustBadge from './TrustBadge.jsx'
 import ContributionForm from './ContributionForm.jsx'
-import { incrementValidation, getContentById, updateAdStatusLink, addPlatformToContent } from '../lib/supabase.js'
-import { PLATFORMS, PLATFORM_LABELS } from '../lib/platforms.js'
+import { getContentById, updateAdStatusLink, addPlatformToContent } from '../lib/supabase.js'
+import { PLATFORMS, PLATFORM_LABELS, PLATFORM_SEARCH_URLS } from '../lib/platforms.js'
 import { posterUrl } from '../lib/tmdb.js'
 import AdminEditContent from './AdminEditContent.jsx'
 
 const ADMIN_EMAIL = 'amelien.delahaie@gmail.com'
-
-const STATUS_LABELS = {
-  available: 'Audiodescription disponible',
-  unavailable: 'Audiodescription non disponible',
-  unverified: 'Non encore vérifié',
-}
 
 export default function ContentDetailPage() {
   const navigate = useNavigate()
@@ -24,18 +17,64 @@ export default function ContentDetailPage() {
   const [content, setContent] = useState(location.state?.content || null)
   const [isLoading, setIsLoading] = useState(true)
   const [activeReportId, setActiveReportId] = useState(null)
-  const [validatedIds, setValidatedIds] = useState({})
-  const [localCounts, setLocalCounts] = useState({})
+  const [reportedIds, setReportedIds] = useState(new Set())
   const [editingLinkId, setEditingLinkId] = useState(null)
   const [linkDraft, setLinkDraft] = useState({})
   const [linkSaving, setLinkSaving] = useState({})
   const [addingPlatform, setAddingPlatform] = useState(false)
   const [newPlatform, setNewPlatform] = useState('')
+  const [newPlatformLink, setNewPlatformLink] = useState('')
   const [addingPlatformSaving, setAddingPlatformSaving] = useState(false)
   const [addPlatformError, setAddPlatformError] = useState('')
+  const [openMenuId, setOpenMenuId] = useState(null)
 
-  const reportButtonRefs = useRef({})
+  const menuBtnRefs = useRef({})
+  const menuRefs = useRef({})
   const backBtnRef = useRef(null)
+
+  // Close dropdown on click outside
+  useEffect(() => {
+    if (!openMenuId) return
+    function handlePointerDown(e) {
+      const menu = menuRefs.current[openMenuId]
+      const btn = menuBtnRefs.current[openMenuId]
+      if (
+        menu && !menu.contains(e.target) &&
+        btn && !btn.contains(e.target)
+      ) {
+        setOpenMenuId(null)
+      }
+    }
+    document.addEventListener('pointerdown', handlePointerDown)
+    return () => document.removeEventListener('pointerdown', handlePointerDown)
+  }, [openMenuId])
+
+  // Focus first menuitem when dropdown opens
+  useEffect(() => {
+    if (!openMenuId) return
+    const menu = menuRefs.current[openMenuId]
+    menu?.querySelector('[role="menuitem"]')?.focus()
+  }, [openMenuId])
+
+  function handleMenuKeyDown(e, statusId) {
+    const menu = menuRefs.current[statusId]
+    if (!menu) return
+    const items = [...menu.querySelectorAll('[role="menuitem"]')]
+    const idx = items.indexOf(document.activeElement)
+    if (e.key === 'ArrowDown') {
+      e.preventDefault()
+      items[(idx + 1) % items.length]?.focus()
+    } else if (e.key === 'ArrowUp') {
+      e.preventDefault()
+      items[(idx - 1 + items.length) % items.length]?.focus()
+    } else if (e.key === 'Escape') {
+      e.preventDefault()
+      setOpenMenuId(null)
+      menuBtnRefs.current[statusId]?.focus()
+    } else if (e.key === 'Tab') {
+      setOpenMenuId(null)
+    }
+  }
 
   useEffect(() => {
     getContentById(id).then(({ data }) => {
@@ -56,26 +95,11 @@ export default function ContentDetailPage() {
   const adStatuses = content.ad_status || []
   const inPlaylist = playlistIds.has(content.id)
 
-  async function handleValidate(statusId, platform) {
-    if (validatedIds[statusId]) return
-    const { error } = await incrementValidation(statusId)
-    if (!error) {
-      setValidatedIds((prev) => ({ ...prev, [statusId]: true }))
-      setLocalCounts((prev) => ({
-        ...prev,
-        [statusId]:
-          (prev[statusId] ??
-            (adStatuses.find((s) => s.id === statusId)?.validation_count ?? 0)) + 1,
-      }))
-      announce(`Merci pour votre validation sur ${PLATFORM_LABELS[platform] || platform}.`)
-    }
-  }
-
   async function handleAddPlatform() {
     if (!newPlatform) return
     setAddingPlatformSaving(true)
     setAddPlatformError('')
-    const { data, error } = await addPlatformToContent(content.id, newPlatform)
+    const { data, error } = await addPlatformToContent(content.id, newPlatform, newPlatformLink.trim() || null)
     setAddingPlatformSaving(false)
     if (error) {
       setAddPlatformError('Une erreur est survenue. Veuillez réessayer.')
@@ -84,6 +108,7 @@ export default function ContentDetailPage() {
     setContent((c) => ({ ...c, ad_status: [...(c.ad_status || []), data] }))
     setAddingPlatform(false)
     setNewPlatform('')
+    setNewPlatformLink('')
     announce(`${PLATFORM_LABELS[newPlatform] || newPlatform} ajouté.`)
   }
 
@@ -128,10 +153,7 @@ export default function ContentDetailPage() {
           />
         )}
         <div className="flex-1 min-w-0">
-          <h2
-            id="content-detail-title"
-            className="text-2xl font-bold mb-2"
-          >
+          <h2 id="content-detail-title" className="text-2xl font-bold mb-2">
             {content.title}
             {content.year && (
               <span className="font-normal text-lg ml-2 text-gray-700 dark:text-gray-300">
@@ -169,7 +191,7 @@ export default function ContentDetailPage() {
         </div>
       )}
 
-      <h3 className="text-lg font-bold mb-4">Audiodescription par plateforme</h3>
+      <h3 className="text-lg font-bold mb-4">Audiodescription disponible par plateforme</h3>
 
       {adStatuses.length === 0 ? (
         <p className="text-sm text-gray-600 dark:text-gray-400">
@@ -182,41 +204,39 @@ export default function ContentDetailPage() {
             className="space-y-4"
           >
             {adStatuses.map((status) => {
-              const count = localCounts[status.id] ?? status.validation_count ?? 0
-              const validated = validatedIds[status.id]
+              const isReported = reportedIds.has(status.id)
               const isReportOpen = activeReportId === status.id
               const isEditingLink = editingLinkId === status.id
+              const isMenuOpen = openMenuId === status.id
               const platformName = PLATFORM_LABELS[status.platform] || status.platform
+              const searchCfg = PLATFORM_SEARCH_URLS[status.platform]
+              const searchHref = searchCfg
+                ? searchCfg.withQuery
+                  ? `${searchCfg.url}${encodeURIComponent(content.title)}`
+                  : searchCfg.url
+                : null
 
               return (
                 <li
                   key={status.id}
                   className="p-4 border-2 border-gray-200 dark:border-gray-700 rounded-lg"
                 >
-                  <div className="flex flex-wrap items-center gap-3 mb-3">
+                  {/* Platform name + badge */}
+                  <div className="flex items-center gap-2 flex-wrap mb-3">
                     <span className="text-base font-semibold">{platformName}</span>
-                    {count > 0 && <TrustBadge validationCount={count} />}
+                    {isReported && (
+                      <span
+                        aria-label="Signalé : l'audiodescription serait potentiellement indisponible"
+                        className="inline-flex items-center px-2 py-0.5 rounded text-xs font-semibold bg-red-600 text-white"
+                      >
+                        Signalé
+                      </span>
+                    )}
                   </div>
 
-                  {count > 0 && (
-                    <div className="flex items-center gap-2 mb-3">
-                      <progress
-                        value={Math.min(count, 5)}
-                        max={5}
-                        aria-label={`Niveau de confiance : ${count} validation${count > 1 ? 's' : ''} sur 5`}
-                        className="w-32 h-2"
-                      />
-                      <span
-                        className="text-sm text-gray-700 dark:text-gray-300"
-                        aria-hidden="true"
-                      >
-                        {count} / 5
-                      </span>
-                    </div>
-                  )}
-
-                  <div className="flex flex-wrap gap-3">
-                    {status.lien && (
+                  {/* Actions row */}
+                  <div className="flex flex-wrap items-center gap-3">
+                    {status.lien ? (
                       <a
                         href={status.lien}
                         target="_blank"
@@ -226,63 +246,78 @@ export default function ContentDetailPage() {
                       >
                         Voir sur {platformName} ↗
                       </a>
-                    )}
-
-                    {user && (
-                      <>
-                        <button
-                          aria-label={
-                            validated
-                              ? `Validation enregistrée pour ${platformName}`
-                              : `Confirmer que l'audiodescription est disponible sur ${platformName}`
-                          }
-                          disabled={validated}
-                          onClick={() => handleValidate(status.id, status.platform)}
-                          className="px-4 py-2 min-h-touch text-sm font-medium border-2 border-black dark:border-white rounded hover:bg-gray-100 dark:hover:bg-gray-800 focus-visible:outline-none focus-visible:ring focus-visible:ring-offset-2 focus-visible:ring-black dark:focus-visible:ring-white disabled:opacity-60 disabled:cursor-not-allowed"
-                        >
-                          {validated ? "L'AD est confirmée ✓" : "L'AD est toujours disponible"}
-                        </button>
-
-                        <button
-                          ref={(el) => { reportButtonRefs.current[status.id] = el }}
-                          aria-label={`Signaler que l'audiodescription n'est plus disponible sur ${platformName} pour ${content.title}`}
-                          aria-expanded={isReportOpen}
-                          onClick={() =>
-                            isReportOpen ? setActiveReportId(null) : setActiveReportId(status.id)
-                          }
-                          className="px-4 py-2 min-h-touch text-sm font-medium underline hover:no-underline focus-visible:outline-none focus-visible:ring focus-visible:ring-offset-2 focus-visible:ring-black dark:focus-visible:ring-white"
-                        >
-                          {"L'AD n'est plus disponible"}
-                        </button>
-                      </>
-                    )}
-
-                    {isAdmin && (
-                      <button
-                        aria-label={`Modifier l'URL pour ${platformName}`}
-                        aria-expanded={isEditingLink}
-                        onClick={() => {
-                          if (isEditingLink) {
-                            setEditingLinkId(null)
-                          } else {
-                            setLinkDraft((prev) => ({ ...prev, [status.id]: status.lien || '' }))
-                            setEditingLinkId(status.id)
-                          }
-                        }}
-                        className="px-4 py-2 min-h-touch text-sm font-medium underline hover:no-underline focus-visible:outline-none focus-visible:ring focus-visible:ring-offset-2 focus-visible:ring-black dark:focus-visible:ring-white"
+                    ) : searchHref ? (
+                      <a
+                        href={searchHref}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        aria-label={`Rechercher ${content.title} sur ${platformName} (nouvel onglet)`}
+                        className="px-4 py-2 min-h-touch text-sm font-medium bg-black dark:bg-white text-white dark:text-black rounded hover:bg-gray-800 dark:hover:bg-gray-200 focus-visible:outline-none focus-visible:ring focus-visible:ring-offset-2 focus-visible:ring-black dark:focus-visible:ring-white inline-flex items-center"
                       >
-                        {status.lien ? "Modifier l'URL" : "Ajouter une URL"}
-                      </button>
+                        Rechercher sur {platformName} ↗
+                      </a>
+                    ) : null}
+
+                    {/* Plus d'options dropdown — utilisateurs connectés seulement */}
+                    {user && (
+                      <div className="relative">
+                        <button
+                          ref={(el) => { menuBtnRefs.current[status.id] = el }}
+                          aria-haspopup="menu"
+                          aria-expanded={isMenuOpen}
+                          aria-label={`Plus d'options pour ${platformName}`}
+                          onClick={() => setOpenMenuId(isMenuOpen ? null : status.id)}
+                          className="px-4 py-2 min-h-touch text-sm font-medium border-2 border-black dark:border-white rounded hover:bg-gray-100 dark:hover:bg-gray-800 focus-visible:outline-none focus-visible:ring focus-visible:ring-offset-2 focus-visible:ring-black dark:focus-visible:ring-white"
+                        >
+                          Plus d'options
+                        </button>
+
+                        {isMenuOpen && (
+                          <ul
+                            ref={(el) => { menuRefs.current[status.id] = el }}
+                            role="menu"
+                            aria-label={`Options pour ${platformName}`}
+                            onKeyDown={(e) => handleMenuKeyDown(e, status.id)}
+                            className="absolute left-0 top-full mt-1 z-10 min-w-max bg-white dark:bg-gray-900 border-2 border-black dark:border-white rounded shadow-lg py-1"
+                          >
+                            <li role="none">
+                              <button
+                                role="menuitem"
+                                tabIndex={-1}
+                                onClick={() => {
+                                  setOpenMenuId(null)
+                                  setActiveReportId(status.id)
+                                }}
+                                className="w-full text-left px-4 py-2 text-sm hover:bg-gray-100 dark:hover:bg-gray-800 focus:outline-none focus:bg-gray-100 dark:focus:bg-gray-800"
+                              >
+                                Signaler l'absence d'audiodescription
+                              </button>
+                            </li>
+                            <li role="none">
+                              <button
+                                role="menuitem"
+                                tabIndex={-1}
+                                onClick={() => {
+                                  setOpenMenuId(null)
+                                  setLinkDraft((prev) => ({ ...prev, [status.id]: status.lien || '' }))
+                                  setEditingLinkId(status.id)
+                                }}
+                                className="w-full text-left px-4 py-2 text-sm hover:bg-gray-100 dark:hover:bg-gray-800 focus:outline-none focus:bg-gray-100 dark:focus:bg-gray-800"
+                              >
+                                {status.lien ? 'Modifier le lien vers la plateforme' : 'Ajouter le lien vers la plateforme'}
+                              </button>
+                            </li>
+                          </ul>
+                        )}
+                      </div>
                     )}
                   </div>
 
-                  {isAdmin && isEditingLink && (
+                  {/* Link edit form */}
+                  {isEditingLink && (user || isAdmin) && (
                     <div className="mt-4 flex flex-col gap-2">
-                      <label
-                        htmlFor={`link-input-${status.id}`}
-                        className="text-sm font-medium"
-                      >
-                        URL pour {platformName}
+                      <label htmlFor={`link-input-${status.id}`} className="text-sm font-medium">
+                        Lien vers {platformName}
                       </label>
                       <input
                         id={`link-input-${status.id}`}
@@ -312,13 +347,15 @@ export default function ContentDetailPage() {
                     </div>
                   )}
 
+                  {/* Report form */}
                   {isReportOpen && (
                     <ContributionForm
                       contentId={content.id}
                       contentTitle={content.title}
                       platform={platformName}
                       onClose={() => setActiveReportId(null)}
-                      returnFocusRef={{ current: reportButtonRefs.current[status.id] }}
+                      onReport={() => setReportedIds((prev) => new Set([...prev, status.id]))}
+                      returnFocusRef={{ current: menuBtnRefs.current[status.id] }}
                     />
                   )}
                 </li>
@@ -326,6 +363,7 @@ export default function ContentDetailPage() {
             })}
           </ul>
 
+          {/* Add platform */}
           {user && (() => {
             const existingPlatforms = new Set(adStatuses.map((s) => s.platform))
             const availablePlatforms = PLATFORMS.filter((p) => !existingPlatforms.has(p.value))
@@ -343,7 +381,7 @@ export default function ContentDetailPage() {
                     + Ajouter une plateforme
                   </button>
                 ) : (
-                  <div className="flex flex-col gap-3 p-4 border-2 border-gray-200 dark:border-gray-700 rounded-lg">
+                  <div className="flex flex-col gap-4 p-4 border-2 border-gray-200 dark:border-gray-700 rounded-lg">
                     <div>
                       <label htmlFor="new-platform-select" className="block text-sm font-medium mb-2">
                         Plateforme
@@ -359,6 +397,19 @@ export default function ContentDetailPage() {
                         ))}
                       </select>
                     </div>
+                    <div>
+                      <label htmlFor="new-platform-link" className="block text-sm font-medium mb-2">
+                        Ajouter le lien vers le contenu sur {PLATFORM_LABELS[newPlatform] || newPlatform}
+                      </label>
+                      <input
+                        id="new-platform-link"
+                        type="url"
+                        value={newPlatformLink}
+                        onChange={(e) => setNewPlatformLink(e.target.value)}
+                        placeholder="https://…"
+                        className="w-full px-3 py-2 min-h-touch border-2 border-black dark:border-white rounded bg-white dark:bg-gray-900 text-sm focus-visible:outline-none focus-visible:ring focus-visible:ring-offset-2 focus-visible:ring-black dark:focus-visible:ring-white"
+                      />
+                    </div>
                     {addPlatformError && (
                       <p role="alert" className="text-sm text-red-700 dark:text-red-400">
                         {addPlatformError}
@@ -373,7 +424,7 @@ export default function ContentDetailPage() {
                         {addingPlatformSaving ? 'Envoi…' : 'Confirmer'}
                       </button>
                       <button
-                        onClick={() => { setAddingPlatform(false); setAddPlatformError('') }}
+                        onClick={() => { setAddingPlatform(false); setAddPlatformError(''); setNewPlatformLink('') }}
                         className="px-4 py-2 min-h-touch text-sm font-medium underline hover:no-underline focus-visible:outline-none focus-visible:ring focus-visible:ring-offset-2 focus-visible:ring-black dark:focus-visible:ring-white"
                       >
                         Annuler
@@ -394,11 +445,12 @@ export default function ContentDetailPage() {
               >
                 Connectez-vous
               </Link>{' '}
-              pour valider ou signaler l'audiodescription.
+              pour signaler l'audiodescription.
             </p>
           )}
         </>
       )}
+
       {isAdmin && (
         <AdminEditContent
           contentId={content.id}

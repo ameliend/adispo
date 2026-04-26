@@ -11,6 +11,7 @@ export default function ContributionForm({
   contentTitle,
   platform,
   onClose,
+  onReport,
   returnFocusRef,
 }) {
   const [claimedStatus, setClaimedStatus] = useState('unavailable')
@@ -54,6 +55,7 @@ export default function ContributionForm({
     }
 
     setSubmitted(true)
+    onReport?.()
     requestAnimationFrame(() => {
       statusRef.current?.focus()
     })

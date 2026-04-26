@@ -3,7 +3,6 @@ import { useNavigate, useLocation, useOutletContext } from 'react-router-dom'
 import { searchTitles, getContentByTmdbId } from '../lib/supabase.js'
 import { searchTmdb, posterUrl } from '../lib/tmdb.js'
 import { PLATFORM_LABELS } from '../lib/platforms.js'
-import TrustBadge, { getTrustLevel } from './TrustBadge.jsx'
 import ResultCard from './ResultCard.jsx'
 
 const PLATFORMS = [
@@ -328,47 +327,38 @@ export default function SearchPage() {
             </p>
             <ul className="space-y-2">
               {browseResults.map((content) => {
-                const adStatus = content.ad_status?.[0]
-                const trustLevel = getTrustLevel(adStatus?.validation_count)
                 return (
                   <li key={content.id}>
                     <button
                       onClick={() => navigate(`/contenu/${content.id}`, { state: { content } })}
                       className="w-full text-left p-3 border-2 border-gray-200 dark:border-gray-700 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-800 hover:border-black dark:hover:border-white focus-visible:outline-none focus-visible:ring focus-visible:ring-offset-2 focus-visible:ring-black dark:focus-visible:ring-white"
-                      aria-label={[content.title, content.year, content.genre, trustLevel].filter(Boolean).join(', ')}
+                      aria-label={[content.title, content.year, content.genre].filter(Boolean).join(', ')}
                     >
-                      <div className="flex items-center justify-between gap-4 flex-nowrap">
-                        <div className="flex items-center gap-3 min-w-0">
-                          {posterUrl(content.poster_path) && (
-                            <img
-                              src={posterUrl(content.poster_path)}
-                              alt=""
-                              aria-hidden="true"
-                              width={30}
-                              height={45}
-                              className="rounded flex-shrink-0 object-cover"
-                              loading="lazy"
-                            />
-                          )}
-                          <div className="min-w-0">
-                            <span className="font-medium truncate block">{content.title}</span>
-                            {content.year && (
-                              <span className="text-sm text-gray-700 dark:text-gray-300">
-                                <span aria-hidden="true">(</span>{content.year}<span aria-hidden="true">)</span>
-                              </span>
-                            )}
-                            {content.genre && (
-                              <span className="block text-sm text-gray-600 dark:text-gray-400 mt-0.5">
-                                {content.genre}
-                              </span>
-                            )}
-                          </div>
-                        </div>
-                        {adStatus && adStatus.validation_count > 0 && (
-                          <div className="flex-shrink-0">
-                            <TrustBadge validationCount={adStatus.validation_count} />
-                          </div>
+                      <div className="flex items-center gap-3 min-w-0">
+                        {posterUrl(content.poster_path) && (
+                          <img
+                            src={posterUrl(content.poster_path)}
+                            alt=""
+                            aria-hidden="true"
+                            width={30}
+                            height={45}
+                            className="rounded flex-shrink-0 object-cover"
+                            loading="lazy"
+                          />
                         )}
+                        <div className="min-w-0">
+                          <span className="font-medium truncate block">{content.title}</span>
+                          {content.year && (
+                            <span className="text-sm text-gray-700 dark:text-gray-300">
+                              <span aria-hidden="true">(</span>{content.year}<span aria-hidden="true">)</span>
+                            </span>
+                          )}
+                          {content.genre && (
+                            <span className="block text-sm text-gray-600 dark:text-gray-400 mt-0.5">
+                              {content.genre}
+                            </span>
+                          )}
+                        </div>
                       </div>
                     </button>
                   </li>

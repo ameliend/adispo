@@ -19,3 +19,11 @@ export const PLATFORM_LABELS = {
 export function platformLabel(value) {
   return PLATFORM_LABELS[value] || value
 }
+
+export const PLATFORM_SEARCH_URLS = {
+  canal:   { url: 'https://www.canalplus.com/', withQuery: false },
+  netflix: { url: 'https://www.netflix.com/search?q=', withQuery: true },
+  disney:  { url: 'https://www.disneyplus.com/search/', withQuery: false },
+  prime:   { url: 'https://www.primevideo.com/search/ref=atv_nb_sr?phrase=', withQuery: true },
+  apple:   { url: 'https://tv.apple.com/fr', withQuery: false },
+}
