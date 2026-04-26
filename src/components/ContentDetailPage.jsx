@@ -191,7 +191,7 @@ export default function ContentDetailPage() {
         </div>
       )}
 
-      <h3 className="text-lg font-bold mb-4">Audiodescription par plateforme</h3>
+      <h3 className="text-lg font-bold mb-4">Audiodescription disponible par plateforme</h3>
 
       {adStatuses.length === 0 ? (
         <p className="text-sm text-gray-600 dark:text-gray-400">
