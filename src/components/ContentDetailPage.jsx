@@ -302,7 +302,7 @@ export default function ContentDetailPage() {
                         htmlFor={`link-input-${status.id}`}
                         className="text-sm font-medium"
                       >
-                        URL pour {platformName}
+                        Lien vers {platformName}
                       </label>
                       <input
                         id={`link-input-${status.id}`}
