@@ -259,7 +259,25 @@ export default function ContentDetailPage() {
                       </>
                     )}
 
-                    {isAdmin && (
+                    {user && !status.lien && (
+                      <button
+                        aria-label={`Ajouter le lien vers le contenu sur ${platformName}`}
+                        aria-expanded={isEditingLink}
+                        onClick={() => {
+                          if (isEditingLink) {
+                            setEditingLinkId(null)
+                          } else {
+                            setLinkDraft((prev) => ({ ...prev, [status.id]: '' }))
+                            setEditingLinkId(status.id)
+                          }
+                        }}
+                        className="px-4 py-2 min-h-touch text-sm font-medium underline hover:no-underline focus-visible:outline-none focus-visible:ring focus-visible:ring-offset-2 focus-visible:ring-black dark:focus-visible:ring-white"
+                      >
+                        Ajouter le lien vers le contenu sur {platformName}
+                      </button>
+                    )}
+
+                    {isAdmin && status.lien && (
                       <button
                         aria-label={`Modifier l'URL pour ${platformName}`}
                         aria-expanded={isEditingLink}
@@ -273,12 +291,12 @@ export default function ContentDetailPage() {
                         }}
                         className="px-4 py-2 min-h-touch text-sm font-medium underline hover:no-underline focus-visible:outline-none focus-visible:ring focus-visible:ring-offset-2 focus-visible:ring-black dark:focus-visible:ring-white"
                       >
-                        {status.lien ? "Modifier l'URL" : "Ajouter une URL"}
+                        Modifier l'URL
                       </button>
                     )}
                   </div>
 
-                  {isAdmin && isEditingLink && (
+                  {isEditingLink && (user || isAdmin) && (
                     <div className="mt-4 flex flex-col gap-2">
                       <label
                         htmlFor={`link-input-${status.id}`}
