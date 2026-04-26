@@ -21,9 +21,9 @@ export function platformLabel(value) {
 }
 
 export const PLATFORM_SEARCH_URLS = {
-  canal: 'https://www.canalplus.com/recherche/?q=',
-  netflix: 'https://www.netflix.com/search?q=',
-  disney: 'https://www.disneyplus.com/search/',
-  prime: 'https://www.primevideo.com/search/ref=atv_nb_sr?phrase=',
-  apple: 'https://tv.apple.com/search?term=',
+  canal:   { url: 'https://www.canalplus.com/', withQuery: false },
+  netflix: { url: 'https://www.netflix.com/search?q=', withQuery: true },
+  disney:  { url: 'https://www.disneyplus.com/search/', withQuery: false },
+  prime:   { url: 'https://www.primevideo.com/search/ref=atv_nb_sr?phrase=', withQuery: true },
+  apple:   { url: 'https://tv.apple.com/fr', withQuery: false },
 }

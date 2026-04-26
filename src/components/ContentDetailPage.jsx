@@ -209,6 +209,12 @@ export default function ContentDetailPage() {
               const isEditingLink = editingLinkId === status.id
               const isMenuOpen = openMenuId === status.id
               const platformName = PLATFORM_LABELS[status.platform] || status.platform
+              const searchCfg = PLATFORM_SEARCH_URLS[status.platform]
+              const searchHref = searchCfg
+                ? searchCfg.withQuery
+                  ? `${searchCfg.url}${encodeURIComponent(content.title)}`
+                  : searchCfg.url
+                : null
 
               return (
                 <li
@@ -240,9 +246,9 @@ export default function ContentDetailPage() {
                       >
                         Voir sur {platformName} ↗
                       </a>
-                    ) : PLATFORM_SEARCH_URLS[status.platform] ? (
+                    ) : searchHref ? (
                       <a
-                        href={`${PLATFORM_SEARCH_URLS[status.platform]}${encodeURIComponent(content.title)}`}
+                        href={searchHref}
                         target="_blank"
                         rel="noopener noreferrer"
                         aria-label={`Rechercher ${content.title} sur ${platformName} (nouvel onglet)`}
