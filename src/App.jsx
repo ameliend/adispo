@@ -120,16 +120,29 @@ function Layout() {
               <svg
                 aria-hidden="true"
                 focusable="false"
-                viewBox="0 0 110 30"
-                className="fill-current h-7 w-auto"
+                viewBox="-10 0 760 225"
+                className="block h-8 w-auto"
               >
-                <text x="0" y="24" fontSize="26" fontWeight="700" fontFamily="system-ui,-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif">ADispo</text>
+                <text
+                  x="0"
+                  y="170"
+                  fontFamily="Archivo, sans-serif"
+                  fontSize="220"
+                  letterSpacing="-16"
+                  fill="currentColor"
+                >
+                  <tspan fontWeight="900">AD</tspan>
+                  <tspan fontWeight="600" dx="40">ıspo</tspan>
+                </text>
+                <path
+                  d="M 320 30 Q 354 100 320 170"
+                  stroke="currentColor"
+                  strokeWidth="9"
+                  strokeLinecap="round"
+                  fill="none"
+                />
               </svg>
             </Link>
-            {' '}
-            <span className="text-base font-normal text-gray-700 dark:text-gray-300 hidden sm:inline">
-              — Audiodescription sur les plateformes de streaming
-            </span>
           </h1>
 
           <div className="relative flex-shrink-0" ref={menuRef}>
