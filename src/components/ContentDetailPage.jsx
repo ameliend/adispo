@@ -1,19 +1,12 @@
 import { useEffect, useRef, useState } from 'react'
 import { useNavigate, useLocation, useParams, useOutletContext, Link } from 'react-router-dom'
-import TrustBadge from './TrustBadge.jsx'
 import ContributionForm from './ContributionForm.jsx'
-import { incrementValidation, getContentById, updateAdStatusLink, addPlatformToContent } from '../lib/supabase.js'
+import { getContentById, updateAdStatusLink, addPlatformToContent } from '../lib/supabase.js'
 import { PLATFORMS, PLATFORM_LABELS } from '../lib/platforms.js'
 import { posterUrl } from '../lib/tmdb.js'
 import AdminEditContent from './AdminEditContent.jsx'
 
 const ADMIN_EMAIL = 'amelien.delahaie@gmail.com'
-
-const STATUS_LABELS = {
-  available: 'Audiodescription disponible',
-  unavailable: 'Audiodescription non disponible',
-  unverified: 'Non encore vérifié',
-}
 
 export default function ContentDetailPage() {
   const navigate = useNavigate()
@@ -24,8 +17,7 @@ export default function ContentDetailPage() {
   const [content, setContent] = useState(location.state?.content || null)
   const [isLoading, setIsLoading] = useState(true)
   const [activeReportId, setActiveReportId] = useState(null)
-  const [validatedIds, setValidatedIds] = useState({})
-  const [localCounts, setLocalCounts] = useState({})
+  const [reportedIds, setReportedIds] = useState(new Set())
   const [editingLinkId, setEditingLinkId] = useState(null)
   const [linkDraft, setLinkDraft] = useState({})
   const [linkSaving, setLinkSaving] = useState({})
@@ -56,21 +48,6 @@ export default function ContentDetailPage() {
 
   const adStatuses = content.ad_status || []
   const inPlaylist = playlistIds.has(content.id)
-
-  async function handleValidate(statusId, platform) {
-    if (validatedIds[statusId]) return
-    const { error } = await incrementValidation(statusId)
-    if (!error) {
-      setValidatedIds((prev) => ({ ...prev, [statusId]: true }))
-      setLocalCounts((prev) => ({
-        ...prev,
-        [statusId]:
-          (prev[statusId] ??
-            (adStatuses.find((s) => s.id === statusId)?.validation_count ?? 0)) + 1,
-      }))
-      announce(`Merci pour votre validation sur ${PLATFORM_LABELS[platform] || platform}.`)
-    }
-  }
 
   async function handleAddPlatform() {
     if (!newPlatform) return
@@ -130,10 +107,7 @@ export default function ContentDetailPage() {
           />
         )}
         <div className="flex-1 min-w-0">
-          <h2
-            id="content-detail-title"
-            className="text-2xl font-bold mb-2"
-          >
+          <h2 id="content-detail-title" className="text-2xl font-bold mb-2">
             {content.title}
             {content.year && (
               <span className="font-normal text-lg ml-2 text-gray-700 dark:text-gray-300">
@@ -184,8 +158,7 @@ export default function ContentDetailPage() {
             className="space-y-4"
           >
             {adStatuses.map((status) => {
-              const count = localCounts[status.id] ?? status.validation_count ?? 0
-              const validated = validatedIds[status.id]
+              const isReported = reportedIds.has(status.id)
               const isReportOpen = activeReportId === status.id
               const isEditingLink = editingLinkId === status.id
               const platformName = PLATFORM_LABELS[status.platform] || status.platform
@@ -195,28 +168,36 @@ export default function ContentDetailPage() {
                   key={status.id}
                   className="p-4 border-2 border-gray-200 dark:border-gray-700 rounded-lg"
                 >
-                  <div className="flex flex-wrap items-center gap-3 mb-3">
-                    <span className="text-base font-semibold">{platformName}</span>
-                    {count > 0 && <TrustBadge validationCount={count} />}
+                  {/* Header row: platform name + badge + report button */}
+                  <div className="flex items-center justify-between gap-3 mb-3">
+                    <div className="flex items-center gap-2 flex-wrap">
+                      <span className="text-base font-semibold">{platformName}</span>
+                      {isReported && (
+                        <span
+                          aria-label="Signalé : l'audiodescription serait potentiellement indisponible"
+                          className="inline-flex items-center px-2 py-0.5 rounded text-xs font-semibold bg-red-600 text-white"
+                        >
+                          Signalé
+                        </span>
+                      )}
+                    </div>
+
+                    {user && (
+                      <button
+                        ref={(el) => { reportButtonRefs.current[status.id] = el }}
+                        aria-label="Signaler l'absence d'audiodescription"
+                        aria-expanded={isReportOpen}
+                        onClick={() =>
+                          isReportOpen ? setActiveReportId(null) : setActiveReportId(status.id)
+                        }
+                        className="flex-shrink-0 w-10 h-10 flex items-center justify-center rounded hover:bg-gray-100 dark:hover:bg-gray-800 focus-visible:outline-none focus-visible:ring focus-visible:ring-offset-2 focus-visible:ring-black dark:focus-visible:ring-white text-gray-500 dark:text-gray-400 text-lg leading-none"
+                      >
+                        <span aria-hidden="true">•••</span>
+                      </button>
+                    )}
                   </div>
 
-                  {count > 0 && (
-                    <div className="flex items-center gap-2 mb-3">
-                      <progress
-                        value={Math.min(count, 5)}
-                        max={5}
-                        aria-label={`Niveau de confiance : ${count} validation${count > 1 ? 's' : ''} sur 5`}
-                        className="w-32 h-2"
-                      />
-                      <span
-                        className="text-sm text-gray-700 dark:text-gray-300"
-                        aria-hidden="true"
-                      >
-                        {count} / 5
-                      </span>
-                    </div>
-                  )}
-
+                  {/* Actions row */}
                   <div className="flex flex-wrap gap-3">
                     {status.lien && (
                       <a
@@ -228,35 +209,6 @@ export default function ContentDetailPage() {
                       >
                         Voir sur {platformName} ↗
                       </a>
-                    )}
-
-                    {user && (
-                      <>
-                        <button
-                          aria-label={
-                            validated
-                              ? `Validation enregistrée pour ${platformName}`
-                              : `Confirmer que l'audiodescription est disponible sur ${platformName}`
-                          }
-                          disabled={validated}
-                          onClick={() => handleValidate(status.id, status.platform)}
-                          className="px-4 py-2 min-h-touch text-sm font-medium border-2 border-black dark:border-white rounded hover:bg-gray-100 dark:hover:bg-gray-800 focus-visible:outline-none focus-visible:ring focus-visible:ring-offset-2 focus-visible:ring-black dark:focus-visible:ring-white disabled:opacity-60 disabled:cursor-not-allowed"
-                        >
-                          {validated ? "L'AD est confirmée ✓" : "L'AD est toujours disponible"}
-                        </button>
-
-                        <button
-                          ref={(el) => { reportButtonRefs.current[status.id] = el }}
-                          aria-label={`Signaler que l'audiodescription n'est plus disponible sur ${platformName} pour ${content.title}`}
-                          aria-expanded={isReportOpen}
-                          onClick={() =>
-                            isReportOpen ? setActiveReportId(null) : setActiveReportId(status.id)
-                          }
-                          className="px-4 py-2 min-h-touch text-sm font-medium underline hover:no-underline focus-visible:outline-none focus-visible:ring focus-visible:ring-offset-2 focus-visible:ring-black dark:focus-visible:ring-white"
-                        >
-                          {"L'AD n'est plus disponible"}
-                        </button>
-                      </>
                     )}
 
                     {user && !status.lien && (
@@ -296,12 +248,10 @@ export default function ContentDetailPage() {
                     )}
                   </div>
 
+                  {/* Link edit form */}
                   {isEditingLink && (user || isAdmin) && (
                     <div className="mt-4 flex flex-col gap-2">
-                      <label
-                        htmlFor={`link-input-${status.id}`}
-                        className="text-sm font-medium"
-                      >
+                      <label htmlFor={`link-input-${status.id}`} className="text-sm font-medium">
                         Lien vers {platformName}
                       </label>
                       <input
@@ -332,12 +282,14 @@ export default function ContentDetailPage() {
                     </div>
                   )}
 
+                  {/* Report form */}
                   {isReportOpen && (
                     <ContributionForm
                       contentId={content.id}
                       contentTitle={content.title}
                       platform={platformName}
                       onClose={() => setActiveReportId(null)}
+                      onReport={() => setReportedIds((prev) => new Set([...prev, status.id]))}
                       returnFocusRef={{ current: reportButtonRefs.current[status.id] }}
                     />
                   )}
@@ -346,6 +298,7 @@ export default function ContentDetailPage() {
             })}
           </ul>
 
+          {/* Add platform */}
           {user && (() => {
             const existingPlatforms = new Set(adStatuses.map((s) => s.platform))
             const availablePlatforms = PLATFORMS.filter((p) => !existingPlatforms.has(p.value))
@@ -427,11 +380,12 @@ export default function ContentDetailPage() {
               >
                 Connectez-vous
               </Link>{' '}
-              pour valider ou signaler l'audiodescription.
+              pour signaler l'audiodescription.
             </p>
           )}
         </>
       )}
+
       {isAdmin && (
         <AdminEditContent
           contentId={content.id}
