@@ -2,7 +2,7 @@ import { useEffect, useRef, useState } from 'react'
 import { useNavigate, useLocation, useParams, useOutletContext, Link } from 'react-router-dom'
 import ContributionForm from './ContributionForm.jsx'
 import { getContentById, updateAdStatusLink, addPlatformToContent } from '../lib/supabase.js'
-import { PLATFORMS, PLATFORM_LABELS } from '../lib/platforms.js'
+import { PLATFORMS, PLATFORM_LABELS, PLATFORM_SEARCH_URLS } from '../lib/platforms.js'
 import { posterUrl } from '../lib/tmdb.js'
 import AdminEditContent from './AdminEditContent.jsx'
 
@@ -26,9 +26,55 @@ export default function ContentDetailPage() {
   const [newPlatformLink, setNewPlatformLink] = useState('')
   const [addingPlatformSaving, setAddingPlatformSaving] = useState(false)
   const [addPlatformError, setAddPlatformError] = useState('')
+  const [openMenuId, setOpenMenuId] = useState(null)
 
-  const reportButtonRefs = useRef({})
+  const menuBtnRefs = useRef({})
+  const menuRefs = useRef({})
   const backBtnRef = useRef(null)
+
+  // Close dropdown on click outside
+  useEffect(() => {
+    if (!openMenuId) return
+    function handlePointerDown(e) {
+      const menu = menuRefs.current[openMenuId]
+      const btn = menuBtnRefs.current[openMenuId]
+      if (
+        menu && !menu.contains(e.target) &&
+        btn && !btn.contains(e.target)
+      ) {
+        setOpenMenuId(null)
+      }
+    }
+    document.addEventListener('pointerdown', handlePointerDown)
+    return () => document.removeEventListener('pointerdown', handlePointerDown)
+  }, [openMenuId])
+
+  // Focus first menuitem when dropdown opens
+  useEffect(() => {
+    if (!openMenuId) return
+    const menu = menuRefs.current[openMenuId]
+    menu?.querySelector('[role="menuitem"]')?.focus()
+  }, [openMenuId])
+
+  function handleMenuKeyDown(e, statusId) {
+    const menu = menuRefs.current[statusId]
+    if (!menu) return
+    const items = [...menu.querySelectorAll('[role="menuitem"]')]
+    const idx = items.indexOf(document.activeElement)
+    if (e.key === 'ArrowDown') {
+      e.preventDefault()
+      items[(idx + 1) % items.length]?.focus()
+    } else if (e.key === 'ArrowUp') {
+      e.preventDefault()
+      items[(idx - 1 + items.length) % items.length]?.focus()
+    } else if (e.key === 'Escape') {
+      e.preventDefault()
+      setOpenMenuId(null)
+      menuBtnRefs.current[statusId]?.focus()
+    } else if (e.key === 'Tab') {
+      setOpenMenuId(null)
+    }
+  }
 
   useEffect(() => {
     getContentById(id).then(({ data }) => {
@@ -161,6 +207,7 @@ export default function ContentDetailPage() {
               const isReported = reportedIds.has(status.id)
               const isReportOpen = activeReportId === status.id
               const isEditingLink = editingLinkId === status.id
+              const isMenuOpen = openMenuId === status.id
               const platformName = PLATFORM_LABELS[status.platform] || status.platform
 
               return (
@@ -181,9 +228,9 @@ export default function ContentDetailPage() {
                     )}
                   </div>
 
-                  {/* Actions row: Voir sur → lien → ••• */}
+                  {/* Actions row */}
                   <div className="flex flex-wrap items-center gap-3">
-                    {status.lien && (
+                    {status.lien ? (
                       <a
                         href={status.lien}
                         target="_blank"
@@ -193,56 +240,70 @@ export default function ContentDetailPage() {
                       >
                         Voir sur {platformName} ↗
                       </a>
-                    )}
-
-                    {user && !status.lien && (
-                      <button
-                        aria-label={`Ajouter le lien vers le contenu sur ${platformName}`}
-                        aria-expanded={isEditingLink}
-                        onClick={() => {
-                          if (isEditingLink) {
-                            setEditingLinkId(null)
-                          } else {
-                            setLinkDraft((prev) => ({ ...prev, [status.id]: '' }))
-                            setEditingLinkId(status.id)
-                          }
-                        }}
-                        className="px-4 py-2 min-h-touch text-sm font-medium underline hover:no-underline focus-visible:outline-none focus-visible:ring focus-visible:ring-offset-2 focus-visible:ring-black dark:focus-visible:ring-white"
+                    ) : PLATFORM_SEARCH_URLS[status.platform] ? (
+                      <a
+                        href={`${PLATFORM_SEARCH_URLS[status.platform]}${encodeURIComponent(content.title)}`}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        aria-label={`Rechercher ${content.title} sur ${platformName} (nouvel onglet)`}
+                        className="px-4 py-2 min-h-touch text-sm font-medium bg-black dark:bg-white text-white dark:text-black rounded hover:bg-gray-800 dark:hover:bg-gray-200 focus-visible:outline-none focus-visible:ring focus-visible:ring-offset-2 focus-visible:ring-black dark:focus-visible:ring-white inline-flex items-center"
                       >
-                        Ajouter le lien vers le contenu sur {platformName}
-                      </button>
-                    )}
+                        Rechercher sur {platformName} ↗
+                      </a>
+                    ) : null}
 
-                    {isAdmin && status.lien && (
-                      <button
-                        aria-label={`Modifier l'URL pour ${platformName}`}
-                        aria-expanded={isEditingLink}
-                        onClick={() => {
-                          if (isEditingLink) {
-                            setEditingLinkId(null)
-                          } else {
-                            setLinkDraft((prev) => ({ ...prev, [status.id]: status.lien || '' }))
-                            setEditingLinkId(status.id)
-                          }
-                        }}
-                        className="px-4 py-2 min-h-touch text-sm font-medium underline hover:no-underline focus-visible:outline-none focus-visible:ring focus-visible:ring-offset-2 focus-visible:ring-black dark:focus-visible:ring-white"
-                      >
-                        Modifier l'URL
-                      </button>
-                    )}
-
+                    {/* Plus d'options dropdown — utilisateurs connectés seulement */}
                     {user && (
-                      <button
-                        ref={(el) => { reportButtonRefs.current[status.id] = el }}
-                        aria-label="Signaler l'absence d'audiodescription"
-                        aria-expanded={isReportOpen}
-                        onClick={() =>
-                          isReportOpen ? setActiveReportId(null) : setActiveReportId(status.id)
-                        }
-                        className="flex-shrink-0 w-10 h-10 flex items-center justify-center rounded hover:bg-gray-100 dark:hover:bg-gray-800 focus-visible:outline-none focus-visible:ring focus-visible:ring-offset-2 focus-visible:ring-black dark:focus-visible:ring-white text-gray-500 dark:text-gray-400 text-lg leading-none"
-                      >
-                        <span aria-hidden="true">•••</span>
-                      </button>
+                      <div className="relative">
+                        <button
+                          ref={(el) => { menuBtnRefs.current[status.id] = el }}
+                          aria-haspopup="menu"
+                          aria-expanded={isMenuOpen}
+                          aria-label={`Plus d'options pour ${platformName}`}
+                          onClick={() => setOpenMenuId(isMenuOpen ? null : status.id)}
+                          className="px-4 py-2 min-h-touch text-sm font-medium border-2 border-black dark:border-white rounded hover:bg-gray-100 dark:hover:bg-gray-800 focus-visible:outline-none focus-visible:ring focus-visible:ring-offset-2 focus-visible:ring-black dark:focus-visible:ring-white"
+                        >
+                          Plus d'options
+                        </button>
+
+                        {isMenuOpen && (
+                          <ul
+                            ref={(el) => { menuRefs.current[status.id] = el }}
+                            role="menu"
+                            aria-label={`Options pour ${platformName}`}
+                            onKeyDown={(e) => handleMenuKeyDown(e, status.id)}
+                            className="absolute left-0 top-full mt-1 z-10 min-w-max bg-white dark:bg-gray-900 border-2 border-black dark:border-white rounded shadow-lg py-1"
+                          >
+                            <li role="none">
+                              <button
+                                role="menuitem"
+                                tabIndex={-1}
+                                onClick={() => {
+                                  setOpenMenuId(null)
+                                  setActiveReportId(status.id)
+                                }}
+                                className="w-full text-left px-4 py-2 text-sm hover:bg-gray-100 dark:hover:bg-gray-800 focus:outline-none focus:bg-gray-100 dark:focus:bg-gray-800"
+                              >
+                                Signaler l'absence d'audiodescription
+                              </button>
+                            </li>
+                            <li role="none">
+                              <button
+                                role="menuitem"
+                                tabIndex={-1}
+                                onClick={() => {
+                                  setOpenMenuId(null)
+                                  setLinkDraft((prev) => ({ ...prev, [status.id]: status.lien || '' }))
+                                  setEditingLinkId(status.id)
+                                }}
+                                className="w-full text-left px-4 py-2 text-sm hover:bg-gray-100 dark:hover:bg-gray-800 focus:outline-none focus:bg-gray-100 dark:focus:bg-gray-800"
+                              >
+                                {status.lien ? 'Modifier le lien vers la plateforme' : 'Ajouter le lien vers la plateforme'}
+                              </button>
+                            </li>
+                          </ul>
+                        )}
+                      </div>
                     )}
                   </div>
 
@@ -288,7 +349,7 @@ export default function ContentDetailPage() {
                       platform={platformName}
                       onClose={() => setActiveReportId(null)}
                       onReport={() => setReportedIds((prev) => new Set([...prev, status.id]))}
-                      returnFocusRef={{ current: reportButtonRefs.current[status.id] }}
+                      returnFocusRef={{ current: menuBtnRefs.current[status.id] }}
                     />
                   )}
                 </li>
