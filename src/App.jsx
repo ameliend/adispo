@@ -120,7 +120,7 @@ function Layout() {
               <svg
                 aria-hidden="true"
                 focusable="false"
-                viewBox="-10 0 760 260"
+                viewBox="-10 0 760 225"
                 className="h-8 w-auto flex-shrink-0"
               >
                 <text
