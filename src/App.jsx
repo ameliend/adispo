@@ -115,13 +115,13 @@ function Layout() {
             <Link
               to="/"
               aria-label="Accueil ADispo"
-              className="focus-visible:outline-none focus-visible:ring focus-visible:ring-offset-2 focus-visible:ring-black dark:focus-visible:ring-white rounded"
+              className="focus-visible:outline-none focus-visible:ring focus-visible:ring-offset-2 focus-visible:ring-black dark:focus-visible:ring-white rounded inline-flex items-center"
             >
               <svg
                 aria-hidden="true"
                 focusable="false"
                 viewBox="-10 0 760 225"
-                className="h-8 w-auto flex-shrink-0"
+                className="block h-8 w-auto"
               >
                 <text
                   x="0"
