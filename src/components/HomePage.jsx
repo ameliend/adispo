@@ -1,20 +1,9 @@
 import { useEffect, useState } from 'react'
 import { useNavigate, Link, useOutletContext } from 'react-router-dom'
-import { getRecentContributions, getRandomByPlatform } from '../lib/supabase.js'
-import { PLATFORM_LABELS } from '../lib/platforms.js'
+import { getRandomByPlatform } from '../lib/supabase.js'
 import TrustBadge, { getTrustLevel } from './TrustBadge.jsx'
 import { posterUrl } from '../lib/tmdb.js'
 
-function timeAgo(dateStr) {
-  const diff = Date.now() - new Date(dateStr).getTime()
-  const hours = Math.floor(diff / 3600000)
-  if (hours < 1) return "il y a moins d'une heure"
-  if (hours === 1) return 'il y a 1 heure'
-  if (hours < 24) return `il y a ${hours} heures`
-  const days = Math.floor(hours / 24)
-  if (days === 1) return 'il y a 1 jour'
-  return `il y a ${days} jours`
-}
 
 function PlatformMiniCard({ content }) {
   const navigate = useNavigate()
@@ -67,14 +56,12 @@ function PlatformMiniCard({ content }) {
 
 export default function HomePage() {
   const { user, playlistItems, playlistLoading } = useOutletContext()
-  const [recentAdditions, setRecentAdditions] = useState([])
   const [canalContents, setCanalContents] = useState([])
   const [netflixContents, setNetflixContents] = useState([])
   const [appleContents, setAppleContents] = useState([])
 
   useEffect(() => {
     document.title = 'ADispo — Audiodescription sur les plateformes de streaming'
-    getRecentContributions().then(({ data }) => { if (data) setRecentAdditions(data) })
     getRandomByPlatform('canal', 10).then(({ data }) => { if (data) setCanalContents(data) })
     getRandomByPlatform('netflix', 10).then(({ data }) => { if (data) setNetflixContents(data) })
     getRandomByPlatform('apple', 10).then(({ data }) => { if (data) setAppleContents(data) })
@@ -175,28 +162,6 @@ export default function HomePage() {
         </section>
       )}
 
-      <section aria-label="Ajouts récents de la communauté">
-        <h2 className="text-xl font-bold mb-4">Ajouts récents de la communauté</h2>
-        {recentAdditions.length === 0 ? (
-          <p className="text-sm text-gray-700 dark:text-gray-300">Aucun ajout récent pour l'instant.</p>
-        ) : (
-          <ul className="space-y-3">
-            {recentAdditions.map((contrib) => (
-              <li key={contrib.id} className="text-sm py-2 border-b border-gray-200 dark:border-gray-700">
-                <span className="font-medium">
-                  {contrib.contents?.title}
-                  {contrib.contents?.year ? ` (${contrib.contents.year})` : ''}
-                </span>{' '}
-                — Audiodescription signalée sur{' '}
-                <span className="font-medium">
-                  {PLATFORM_LABELS[contrib.platform] || contrib.platform}
-                </span>{' '}
-                — {timeAgo(contrib.submitted_at)}
-              </li>
-            ))}
-          </ul>
-        )}
-      </section>
     </>
   )
 }
