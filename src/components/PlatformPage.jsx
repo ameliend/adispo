@@ -23,11 +23,23 @@ export default function PlatformPage() {
   }, [platform])
 
   const genres = useMemo(() => {
-    const set = new Set(contents.map(c => c.genre).filter(Boolean))
+    const set = new Set()
+    contents.forEach(c => {
+      if (c.genre) {
+        c.genre.split(',').forEach(g => {
+          const trimmed = g.trim()
+          if (trimmed) set.add(trimmed)
+        })
+      }
+    })
     return [...set].sort((a, b) => a.localeCompare(b, 'fr'))
   }, [contents])
 
-  const filtered = genre ? contents.filter(c => c.genre === genre) : contents
+  const filtered = genre
+    ? contents.filter(c =>
+        c.genre && c.genre.split(',').map(g => g.trim()).includes(genre)
+      )
+    : contents
 
   return (
     <section aria-labelledby="platform-page-title">
