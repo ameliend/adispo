@@ -31,6 +31,7 @@ export default function ContentDetailPage() {
   const [linkSaving, setLinkSaving] = useState({})
   const [addingPlatform, setAddingPlatform] = useState(false)
   const [newPlatform, setNewPlatform] = useState('')
+  const [newPlatformLink, setNewPlatformLink] = useState('')
   const [addingPlatformSaving, setAddingPlatformSaving] = useState(false)
   const [addPlatformError, setAddPlatformError] = useState('')
 
@@ -75,7 +76,7 @@ export default function ContentDetailPage() {
     if (!newPlatform) return
     setAddingPlatformSaving(true)
     setAddPlatformError('')
-    const { data, error } = await addPlatformToContent(content.id, newPlatform)
+    const { data, error } = await addPlatformToContent(content.id, newPlatform, newPlatformLink.trim() || null)
     setAddingPlatformSaving(false)
     if (error) {
       setAddPlatformError('Une erreur est survenue. Veuillez réessayer.')
@@ -84,6 +85,7 @@ export default function ContentDetailPage() {
     setContent((c) => ({ ...c, ad_status: [...(c.ad_status || []), data] }))
     setAddingPlatform(false)
     setNewPlatform('')
+    setNewPlatformLink('')
     announce(`${PLATFORM_LABELS[newPlatform] || newPlatform} ajouté.`)
   }
 
@@ -343,7 +345,7 @@ export default function ContentDetailPage() {
                     + Ajouter une plateforme
                   </button>
                 ) : (
-                  <div className="flex flex-col gap-3 p-4 border-2 border-gray-200 dark:border-gray-700 rounded-lg">
+                  <div className="flex flex-col gap-4 p-4 border-2 border-gray-200 dark:border-gray-700 rounded-lg">
                     <div>
                       <label htmlFor="new-platform-select" className="block text-sm font-medium mb-2">
                         Plateforme
@@ -359,6 +361,19 @@ export default function ContentDetailPage() {
                         ))}
                       </select>
                     </div>
+                    <div>
+                      <label htmlFor="new-platform-link" className="block text-sm font-medium mb-2">
+                        Ajouter le lien vers le contenu sur {PLATFORM_LABELS[newPlatform] || newPlatform}
+                      </label>
+                      <input
+                        id="new-platform-link"
+                        type="url"
+                        value={newPlatformLink}
+                        onChange={(e) => setNewPlatformLink(e.target.value)}
+                        placeholder="https://…"
+                        className="w-full px-3 py-2 min-h-touch border-2 border-black dark:border-white rounded bg-white dark:bg-gray-900 text-sm focus-visible:outline-none focus-visible:ring focus-visible:ring-offset-2 focus-visible:ring-black dark:focus-visible:ring-white"
+                      />
+                    </div>
                     {addPlatformError && (
                       <p role="alert" className="text-sm text-red-700 dark:text-red-400">
                         {addPlatformError}
@@ -373,7 +388,7 @@ export default function ContentDetailPage() {
                         {addingPlatformSaving ? 'Envoi…' : 'Confirmer'}
                       </button>
                       <button
-                        onClick={() => { setAddingPlatform(false); setAddPlatformError('') }}
+                        onClick={() => { setAddingPlatform(false); setAddPlatformError(''); setNewPlatformLink('') }}
                         className="px-4 py-2 min-h-touch text-sm font-medium underline hover:no-underline focus-visible:outline-none focus-visible:ring focus-visible:ring-offset-2 focus-visible:ring-black dark:focus-visible:ring-white"
                       >
                         Annuler

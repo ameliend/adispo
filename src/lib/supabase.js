@@ -271,7 +271,7 @@ export async function updateAdStatusLink(adStatusId, lien) {
   }
 }
 
-export async function addPlatformToContent(contentId, platform) {
+export async function addPlatformToContent(contentId, platform, lien) {
   try {
     const { data, error } = await supabase
       .from('ad_status')
@@ -281,6 +281,7 @@ export async function addPlatformToContent(contentId, platform) {
         status: 'available',
         trust_level: 'Signalé',
         validation_count: 1,
+        lien: lien || null,
       })
       .select('id, platform, status, trust_level, validation_count, lien')
       .single()
