@@ -143,10 +143,6 @@ function Layout() {
                 />
               </svg>
             </Link>
-            {' '}
-            <span className="text-base font-normal text-gray-700 dark:text-gray-300 hidden sm:inline">
-              — Audiodescription sur les plateformes de streaming
-            </span>
           </h1>
 
           <div className="relative flex-shrink-0" ref={menuRef}>
