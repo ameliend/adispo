@@ -20,11 +20,10 @@ export default function SupportPage() {
       </h2>
 
       <p className="text-base text-gray-700 dark:text-gray-300 mb-6 leading-relaxed">
-        ADispo est un service indépendant et gratuit, développé bénévolement pour rendre les
-        films et séries accessibles aux personnes aveugles ou malvoyantes. Votre soutien permet
-        de maintenir le service, d'améliorer ses fonctionnalités, d'enrichir le catalogue et
-        d'envisager une application disponible sur les stores iOS et Android. Chaque contribution
-        compte et fait une vraie différence.
+        ADispo est un service gratuit créé pour faciliter la découverte des films et ses séries
+        en audiodescription. Votre soutien nous permet de faire vivre le service, d'innover,
+        d'enrichir le catalogue… et de préparer l'arrivée d'une application sur iOS et Android.
+        Chaque contribution rend la culture plus accessible.
       </p>
 
       <p className="text-base text-gray-700 dark:text-gray-300 mb-8 leading-relaxed">
