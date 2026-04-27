@@ -12,6 +12,11 @@ const PLATFORMS = [
   { value: 'disney', label: 'Disney+' },
   { value: 'prime', label: 'Prime Video' },
   { value: 'apple', label: 'Apple TV+' },
+  { value: 'arte', label: 'Arte' },
+  { value: 'tf1plus', label: 'TF1+' },
+  { value: 'm6plus', label: 'M6+' },
+  { value: 'hbomax', label: 'HBO Max' },
+  { value: 'paramount', label: 'Paramount+' },
 ]
 
 const GENRES = [
