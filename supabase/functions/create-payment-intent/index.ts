@@ -1,7 +1,8 @@
-import Stripe from 'https://esm.sh/stripe@14?target=deno'
+import Stripe from 'https://esm.sh/stripe@14?target=denonext'
 
 const stripe = new Stripe(Deno.env.get('STRIPE_SECRET_KEY') ?? '', {
   apiVersion: '2024-04-10',
+  httpClient: Stripe.createFetchHttpClient(),
 })
 
 const ALLOWED_AMOUNTS = [200, 500, 1500] // cents
