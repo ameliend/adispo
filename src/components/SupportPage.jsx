@@ -33,7 +33,7 @@ export default function SupportPage() {
       </p>
 
       <a
-        href="https://buymeacoffee.com/ameliendel2"
+        href="https://buymeacoffee.com/ameliend"
         target="_blank"
         rel="noopener noreferrer"
         aria-label="Soutenir ADispo sur Buy Me a Coffee (nouvel onglet)"
