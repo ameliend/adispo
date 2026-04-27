@@ -1,7 +1,6 @@
 import { useEffect, useRef } from 'react'
 import { useNavigate, useOutletContext, Link } from 'react-router-dom'
 import { posterUrl } from '../lib/tmdb.js'
-import TrustBadge, { getTrustLevel } from './TrustBadge.jsx'
 
 export default function PlaylistPage() {
   const navigate = useNavigate()
@@ -59,8 +58,6 @@ export default function PlaylistPage() {
           {playlistItems.map((row) => {
             const content = row.contents
             if (!content) return null
-            const adStatus = content.ad_status?.[0]
-            const trustLevel = getTrustLevel(adStatus?.validation_count)
             return (
               <li
                 key={row.id}
@@ -80,7 +77,7 @@ export default function PlaylistPage() {
                 <div className="flex-1 min-w-0">
                   <button
                     onClick={() => navigate(`/contenu/${content.id}`, { state: { content } })}
-                    aria-label={[content.title, content.year, content.genre, trustLevel].filter(Boolean).join(', ')}
+                    aria-label={[content.title, content.year, content.genre].filter(Boolean).join(', ')}
                     className="font-semibold hover:underline focus-visible:outline-none focus-visible:ring focus-visible:ring-offset-2 focus-visible:ring-black dark:focus-visible:ring-white rounded text-left truncate block w-full"
                   >
                     <span aria-hidden="true">
@@ -96,11 +93,6 @@ export default function PlaylistPage() {
                     <span className="block text-sm text-gray-600 dark:text-gray-400">{content.genre}</span>
                   )}
                 </div>
-                {trustLevel && (
-                  <div className="flex-shrink-0">
-                    <TrustBadge validationCount={adStatus?.validation_count} />
-                  </div>
-                )}
                 <button
                   onClick={async () => {
                     await togglePlaylist(content.id)
