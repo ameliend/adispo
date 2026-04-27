@@ -1,31 +1,17 @@
 import { useEffect, useState } from 'react'
-import { useNavigate, Link } from 'react-router-dom'
-import { getRecentContributions, getRandomByPlatform } from '../lib/supabase.js'
-import { PLATFORM_LABELS } from '../lib/platforms.js'
-import TrustBadge, { getTrustLevel } from './TrustBadge.jsx'
+import { useNavigate, Link, useOutletContext } from 'react-router-dom'
+import { getRandomByPlatform, getContentsCount, getRecentContents } from '../lib/supabase.js'
 import { posterUrl } from '../lib/tmdb.js'
 
-function timeAgo(dateStr) {
-  const diff = Date.now() - new Date(dateStr).getTime()
-  const hours = Math.floor(diff / 3600000)
-  if (hours < 1) return "il y a moins d'une heure"
-  if (hours === 1) return 'il y a 1 heure'
-  if (hours < 24) return `il y a ${hours} heures`
-  const days = Math.floor(hours / 24)
-  if (days === 1) return 'il y a 1 jour'
-  return `il y a ${days} jours`
-}
 
 function PlatformMiniCard({ content }) {
   const navigate = useNavigate()
-  const adStatus = content.ad_status?.[0]
-  const trustLevel = getTrustLevel(adStatus?.validation_count)
   return (
     <li>
       <button
         onClick={() => navigate(`/contenu/${content.id}`, { state: { content } })}
         className="w-full text-left p-3 border-2 border-gray-200 dark:border-gray-700 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-800 hover:border-black dark:hover:border-white focus-visible:outline-none focus-visible:ring focus-visible:ring-offset-2 focus-visible:ring-black dark:focus-visible:ring-white"
-        aria-label={[content.title, content.year, content.genre, trustLevel].filter(Boolean).join(', ')}
+        aria-label={[content.title, content.year, content.genre].filter(Boolean).join(', ')}
       >
         <div className="flex items-center justify-between gap-4 flex-nowrap">
           <div className="flex items-center gap-3 min-w-0">
@@ -54,11 +40,6 @@ function PlatformMiniCard({ content }) {
               )}
             </div>
           </div>
-          {adStatus && adStatus.validation_count > 0 && (
-            <div className="flex-shrink-0">
-              <TrustBadge validationCount={adStatus.validation_count} />
-            </div>
-          )}
         </div>
       </button>
     </li>
@@ -66,24 +47,36 @@ function PlatformMiniCard({ content }) {
 }
 
 export default function HomePage() {
-  const [recentAdditions, setRecentAdditions] = useState([])
+  const { user, playlistItems, playlistLoading } = useOutletContext()
   const [canalContents, setCanalContents] = useState([])
   const [netflixContents, setNetflixContents] = useState([])
+  const [appleContents, setAppleContents] = useState([])
+  const [disneyContents, setDisneyContents] = useState([])
+  const [recentContents, setRecentContents] = useState([])
+  const [contentsCount, setContentsCount] = useState(null)
 
   useEffect(() => {
     document.title = 'ADispo — Audiodescription sur les plateformes de streaming'
-    getRecentContributions().then(({ data }) => { if (data) setRecentAdditions(data) })
     getRandomByPlatform('canal', 10).then(({ data }) => { if (data) setCanalContents(data) })
     getRandomByPlatform('netflix', 10).then(({ data }) => { if (data) setNetflixContents(data) })
+    getRandomByPlatform('apple', 10).then(({ data }) => { if (data) setAppleContents(data) })
+    getRandomByPlatform('disney', 10).then(({ data }) => { if (data) setDisneyContents(data) })
+    getRecentContents(10).then(({ data }) => { if (data) setRecentContents(data) })
+    getContentsCount().then(({ count }) => { if (count !== null) setContentsCount(count) })
   }, [])
 
   return (
     <>
       <div className="mb-10">
-        <p className="text-base text-gray-700 dark:text-gray-300 mb-4">
+        <p className="text-base text-gray-700 dark:text-gray-300 mb-2">
           Vérifiez si l'audiodescription est disponible pour un film ou une série sur
           les grandes plateformes de streaming.
         </p>
+        {contentsCount !== null && (
+          <p className="text-base text-gray-700 dark:text-gray-300 mb-4">
+            Déjà plus de {contentsCount} films et séries accessibles.
+          </p>
+        )}
         <Link
           to="/recherche"
           className="inline-block px-6 py-3 min-h-touch bg-black dark:bg-white text-white dark:text-black font-semibold rounded hover:bg-gray-800 dark:hover:bg-gray-200 focus-visible:outline-none focus-visible:ring focus-visible:ring-offset-2 focus-visible:ring-black dark:focus-visible:ring-white"
@@ -92,12 +85,33 @@ export default function HomePage() {
         </Link>
       </div>
 
+      {user && !playlistLoading && playlistItems.length > 0 && (
+        <section aria-labelledby="playlist-section-title" className="mb-12">
+          <div className="flex items-baseline justify-between gap-4 mb-4 flex-wrap">
+            <h2 id="playlist-section-title" className="text-xl font-bold">Ma playlist</h2>
+            <Link
+              to="/playlist"
+              aria-label="Voir toute ma playlist"
+              className="text-sm font-medium underline hover:no-underline focus-visible:outline-none focus-visible:ring focus-visible:ring-offset-2 focus-visible:ring-black dark:focus-visible:ring-white"
+            >
+              Voir toute ma playlist →
+            </Link>
+          </div>
+          <ul className="space-y-2">
+            {playlistItems.slice(0, 5).map((row) => (
+              <PlatformMiniCard key={row.id} content={row.contents} />
+            ))}
+          </ul>
+        </section>
+      )}
+
       {canalContents.length > 0 && (
         <section aria-labelledby="canal-section-title" className="mb-12">
           <div className="flex items-baseline justify-between gap-4 mb-4 flex-wrap">
             <h2 id="canal-section-title" className="text-xl font-bold">CANAL+</h2>
             <Link
               to="/plateforme/canal"
+              aria-label="Voir tous les contenus sur CANAL+"
               className="text-sm font-medium underline hover:no-underline focus-visible:outline-none focus-visible:ring focus-visible:ring-offset-2 focus-visible:ring-black dark:focus-visible:ring-white"
             >
               Voir tous les contenus →
@@ -117,6 +131,7 @@ export default function HomePage() {
             <h2 id="netflix-section-title" className="text-xl font-bold">Netflix</h2>
             <Link
               to="/plateforme/netflix"
+              aria-label="Voir tous les contenus sur Netflix"
               className="text-sm font-medium underline hover:no-underline focus-visible:outline-none focus-visible:ring focus-visible:ring-offset-2 focus-visible:ring-black dark:focus-visible:ring-white"
             >
               Voir tous les contenus →
@@ -130,28 +145,57 @@ export default function HomePage() {
         </section>
       )}
 
-      <section aria-label="Ajouts récents de la communauté">
-        <h2 className="text-xl font-bold mb-4">Ajouts récents de la communauté</h2>
-        {recentAdditions.length === 0 ? (
-          <p className="text-sm text-gray-700 dark:text-gray-300">Aucun ajout récent pour l'instant.</p>
-        ) : (
-          <ul className="space-y-3">
-            {recentAdditions.map((contrib) => (
-              <li key={contrib.id} className="text-sm py-2 border-b border-gray-200 dark:border-gray-700">
-                <span className="font-medium">
-                  {contrib.contents?.title}
-                  {contrib.contents?.year ? ` (${contrib.contents.year})` : ''}
-                </span>{' '}
-                — Audiodescription signalée sur{' '}
-                <span className="font-medium">
-                  {PLATFORM_LABELS[contrib.platform] || contrib.platform}
-                </span>{' '}
-                — {timeAgo(contrib.submitted_at)}
-              </li>
+      {appleContents.length > 0 && (
+        <section aria-labelledby="apple-section-title" className="mb-12">
+          <div className="flex items-baseline justify-between gap-4 mb-4 flex-wrap">
+            <h2 id="apple-section-title" className="text-xl font-bold">Apple TV+</h2>
+            <Link
+              to="/plateforme/apple"
+              aria-label="Voir tous les contenus sur Apple TV+"
+              className="text-sm font-medium underline hover:no-underline focus-visible:outline-none focus-visible:ring focus-visible:ring-offset-2 focus-visible:ring-black dark:focus-visible:ring-white"
+            >
+              Voir tous les contenus →
+            </Link>
+          </div>
+          <ul className="space-y-2">
+            {appleContents.map((content) => (
+              <PlatformMiniCard key={content.id} content={content} />
             ))}
           </ul>
-        )}
-      </section>
+        </section>
+      )}
+
+      {disneyContents.length > 0 && (
+        <section aria-labelledby="disney-section-title" className="mb-12">
+          <div className="flex items-baseline justify-between gap-4 mb-4 flex-wrap">
+            <h2 id="disney-section-title" className="text-xl font-bold">Disney+</h2>
+            <Link
+              to="/plateforme/disney"
+              aria-label="Voir tous les contenus sur Disney+"
+              className="text-sm font-medium underline hover:no-underline focus-visible:outline-none focus-visible:ring focus-visible:ring-offset-2 focus-visible:ring-black dark:focus-visible:ring-white"
+            >
+              Voir tous les contenus →
+            </Link>
+          </div>
+          <ul className="space-y-2">
+            {disneyContents.map((content) => (
+              <PlatformMiniCard key={content.id} content={content} />
+            ))}
+          </ul>
+        </section>
+      )}
+
+      {recentContents.length > 0 && (
+        <section aria-labelledby="recent-section-title" className="mb-12">
+          <h2 id="recent-section-title" className="text-xl font-bold mb-4">Les ajouts récents</h2>
+          <ul className="space-y-2">
+            {recentContents.map((content) => (
+              <PlatformMiniCard key={content.id} content={content} />
+            ))}
+          </ul>
+        </section>
+      )}
+
     </>
   )
 }

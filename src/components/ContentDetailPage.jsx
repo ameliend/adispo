@@ -1,44 +1,91 @@
 import { useEffect, useRef, useState } from 'react'
-import { useNavigate, useLocation, useParams, useOutletContext } from 'react-router-dom'
-import TrustBadge from './TrustBadge.jsx'
+import { useNavigate, useLocation, useParams, useOutletContext, Link } from 'react-router-dom'
 import ContributionForm from './ContributionForm.jsx'
-import { incrementValidation, getContentById } from '../lib/supabase.js'
-import { PLATFORM_LABELS } from '../lib/platforms.js'
+import { getContentById, updateAdStatusLink, addPlatformToContent } from '../lib/supabase.js'
+import { PLATFORMS, PLATFORM_LABELS, PLATFORM_SEARCH_URLS } from '../lib/platforms.js'
 import { posterUrl } from '../lib/tmdb.js'
+import AdminEditContent from './AdminEditContent.jsx'
 
-const STATUS_LABELS = {
-  available: 'Audiodescription disponible',
-  unavailable: 'Audiodescription non disponible',
-  unverified: 'Non encore vérifié',
-}
+const ADMIN_EMAIL = 'amelien.delahaie@gmail.com'
 
 export default function ContentDetailPage() {
   const navigate = useNavigate()
   const location = useLocation()
   const { id } = useParams()
-  const { announce } = useOutletContext()
+  const { announce, showToast, user, playlistIds, togglePlaylist } = useOutletContext()
+  const isAdmin = user?.email === ADMIN_EMAIL
   const [content, setContent] = useState(location.state?.content || null)
-  const [isLoading, setIsLoading] = useState(!location.state?.content)
+  const [isLoading, setIsLoading] = useState(true)
   const [activeReportId, setActiveReportId] = useState(null)
-  const [validatedIds, setValidatedIds] = useState({})
-  const [localCounts, setLocalCounts] = useState({})
+  const [reportedIds, setReportedIds] = useState(new Set())
+  const [editingLinkId, setEditingLinkId] = useState(null)
+  const [linkDraft, setLinkDraft] = useState({})
+  const [linkSaving, setLinkSaving] = useState({})
+  const [addingPlatform, setAddingPlatform] = useState(false)
+  const [newPlatform, setNewPlatform] = useState('')
+  const [newPlatformLink, setNewPlatformLink] = useState('')
+  const [addingPlatformSaving, setAddingPlatformSaving] = useState(false)
+  const [addPlatformError, setAddPlatformError] = useState('')
+  const [openMenuId, setOpenMenuId] = useState(null)
 
-  const reportButtonRefs = useRef({})
+  const menuBtnRefs = useRef({})
+  const menuRefs = useRef({})
+  const backBtnRef = useRef(null)
+
+  // Close dropdown on click outside
+  useEffect(() => {
+    if (!openMenuId) return
+    function handlePointerDown(e) {
+      const menu = menuRefs.current[openMenuId]
+      const btn = menuBtnRefs.current[openMenuId]
+      if (
+        menu && !menu.contains(e.target) &&
+        btn && !btn.contains(e.target)
+      ) {
+        setOpenMenuId(null)
+      }
+    }
+    document.addEventListener('pointerdown', handlePointerDown)
+    return () => document.removeEventListener('pointerdown', handlePointerDown)
+  }, [openMenuId])
+
+  // Focus first menuitem when dropdown opens
+  useEffect(() => {
+    if (!openMenuId) return
+    const menu = menuRefs.current[openMenuId]
+    menu?.querySelector('[role="menuitem"]')?.focus()
+  }, [openMenuId])
+
+  function handleMenuKeyDown(e, statusId) {
+    const menu = menuRefs.current[statusId]
+    if (!menu) return
+    const items = [...menu.querySelectorAll('[role="menuitem"]')]
+    const idx = items.indexOf(document.activeElement)
+    if (e.key === 'ArrowDown') {
+      e.preventDefault()
+      items[(idx + 1) % items.length]?.focus()
+    } else if (e.key === 'ArrowUp') {
+      e.preventDefault()
+      items[(idx - 1 + items.length) % items.length]?.focus()
+    } else if (e.key === 'Escape') {
+      e.preventDefault()
+      setOpenMenuId(null)
+      menuBtnRefs.current[statusId]?.focus()
+    } else if (e.key === 'Tab') {
+      setOpenMenuId(null)
+    }
+  }
 
   useEffect(() => {
-    if (!content) {
-      getContentById(id).then(({ data }) => {
-        setContent(data)
-        setIsLoading(false)
-      })
-    }
-  }, [id]) // eslint-disable-line react-hooks/exhaustive-deps
-
-  const titleRef = useRef(null)
+    getContentById(id).then(({ data }) => {
+      if (data) setContent(data)
+      setIsLoading(false)
+    })
+  }, [id])
 
   useEffect(() => {
     if (!isLoading && content) {
-      titleRef.current?.focus()
+      requestAnimationFrame(() => backBtnRef.current?.focus())
     }
   }, [isLoading, content])
 
@@ -46,19 +93,39 @@ export default function ContentDetailPage() {
   if (!content) return <p className="text-base">Contenu introuvable.</p>
 
   const adStatuses = content.ad_status || []
+  const inPlaylist = playlistIds.has(content.id)
 
-  async function handleValidate(statusId, platform) {
-    if (validatedIds[statusId]) return
-    const { error } = await incrementValidation(statusId)
+  async function handleAddPlatform() {
+    if (!newPlatform) return
+    setAddingPlatformSaving(true)
+    setAddPlatformError('')
+    const { data, error } = await addPlatformToContent(content.id, newPlatform, newPlatformLink.trim() || null)
+    setAddingPlatformSaving(false)
+    if (error) {
+      setAddPlatformError('Une erreur est survenue. Veuillez réessayer.')
+      return
+    }
+    setContent((c) => ({ ...c, ad_status: [...(c.ad_status || []), data] }))
+    setAddingPlatform(false)
+    setNewPlatform('')
+    setNewPlatformLink('')
+    announce(`${PLATFORM_LABELS[newPlatform] || newPlatform} ajouté.`)
+  }
+
+  async function handleSaveLink(statusId) {
+    setLinkSaving((prev) => ({ ...prev, [statusId]: true }))
+    const url = linkDraft[statusId] ?? ''
+    const { error } = await updateAdStatusLink(statusId, url.trim() || null)
+    setLinkSaving((prev) => ({ ...prev, [statusId]: false }))
     if (!error) {
-      setValidatedIds((prev) => ({ ...prev, [statusId]: true }))
-      setLocalCounts((prev) => ({
-        ...prev,
-        [statusId]:
-          (prev[statusId] ??
-            (adStatuses.find((s) => s.id === statusId)?.validation_count ?? 0)) + 1,
+      setContent((c) => ({
+        ...c,
+        ad_status: c.ad_status.map((s) =>
+          s.id === statusId ? { ...s, lien: url.trim() || null } : s
+        ),
       }))
-      announce(`Merci pour votre validation sur ${PLATFORM_LABELS[platform] || platform}.`)
+      setEditingLinkId(null)
+      showToast('Lien mis à jour.')
     }
   }
 
@@ -68,13 +135,14 @@ export default function ContentDetailPage() {
   return (
     <section aria-labelledby="content-detail-title">
       <button
+        ref={backBtnRef}
         onClick={() => navigate(-1)}
         className="mb-6 text-sm font-medium underline hover:no-underline focus-visible:outline-none focus-visible:ring focus-visible:ring-offset-2 focus-visible:ring-black dark:focus-visible:ring-white"
       >
         ← Retour à la recherche
       </button>
 
-      <div className="flex gap-6 items-start mb-8">
+      <div className="flex gap-6 items-start mb-6">
         {posterUrl(content.poster_path || content.posterPath) && (
           <img
             src={posterUrl(content.poster_path || content.posterPath)}
@@ -85,12 +153,7 @@ export default function ContentDetailPage() {
           />
         )}
         <div className="flex-1 min-w-0">
-          <h2
-            id="content-detail-title"
-            ref={titleRef}
-            tabIndex={-1}
-            className="text-2xl font-bold mb-2 focus-visible:outline-none"
-          >
+          <h2 id="content-detail-title" className="text-2xl font-bold mb-2">
             {content.title}
             {content.year && (
               <span className="font-normal text-lg ml-2 text-gray-700 dark:text-gray-300">
@@ -113,107 +176,287 @@ export default function ContentDetailPage() {
         </div>
       </div>
 
-      <h3 className="text-lg font-bold mb-4">Audiodescription par plateforme</h3>
+      {user && (
+        <div className="mb-8">
+          <button
+            onClick={() => {
+              togglePlaylist(content.id)
+              announce(inPlaylist ? `${content.title} retiré de votre playlist.` : `${content.title} ajouté à votre playlist.`)
+            }}
+            aria-pressed={inPlaylist}
+            className="px-4 py-2 min-h-touch text-sm font-medium border-2 border-black dark:border-white rounded hover:bg-gray-100 dark:hover:bg-gray-800 focus-visible:outline-none focus-visible:ring focus-visible:ring-offset-2 focus-visible:ring-black dark:focus-visible:ring-white"
+          >
+            {inPlaylist ? '✓ Dans ma playlist' : '+ Ajouter à ma playlist'}
+          </button>
+        </div>
+      )}
+
+      <h3 className="text-lg font-bold mb-4">Audiodescription disponible par plateforme</h3>
 
       {adStatuses.length === 0 ? (
         <p className="text-sm text-gray-600 dark:text-gray-400">
           Aucune information sur l'audiodescription pour ce titre.
         </p>
       ) : (
-        <ul
-          aria-label={`Statut de l'audiodescription par plateforme pour ${content.title}`}
-          className="space-y-4"
-        >
-          {adStatuses.map((status) => {
-            const count = localCounts[status.id] ?? status.validation_count ?? 0
-            const validated = validatedIds[status.id]
-            const isReportOpen = activeReportId === status.id
-            const label = STATUS_LABELS[status.status] || status.status
-            const platformName = PLATFORM_LABELS[status.platform] || status.platform
+        <>
+          <ul
+            aria-label={`Statut de l'audiodescription par plateforme pour ${content.title}`}
+            className="space-y-4"
+          >
+            {adStatuses.map((status) => {
+              const isReported = reportedIds.has(status.id)
+              const isReportOpen = activeReportId === status.id
+              const isEditingLink = editingLinkId === status.id
+              const isMenuOpen = openMenuId === status.id
+              const platformName = PLATFORM_LABELS[status.platform] || status.platform
+              const searchCfg = PLATFORM_SEARCH_URLS[status.platform]
+              const searchHref = searchCfg
+                ? searchCfg.withQuery
+                  ? `${searchCfg.url}${encodeURIComponent(content.title)}`
+                  : searchCfg.url
+                : null
 
-            return (
-              <li
-                key={status.id}
-                className="p-4 border-2 border-gray-200 dark:border-gray-700 rounded-lg"
-              >
-                <div className="flex flex-wrap items-center gap-3 mb-3">
-                  <span className="text-base font-semibold">{platformName}</span>
-                  {count > 0 && <TrustBadge validationCount={count} />}
-                </div>
-
-                {count > 0 && (
-                  <div className="flex items-center gap-2 mb-3">
-                    <progress
-                      value={Math.min(count, 5)}
-                      max={5}
-                      aria-label={`Niveau de confiance : ${count} validation${count > 1 ? 's' : ''} sur 5`}
-                      className="w-32 h-2"
-                    />
-                    <span
-                      className="text-sm text-gray-700 dark:text-gray-300"
-                      aria-hidden="true"
-                    >
-                      {count} / 5
-                    </span>
+              return (
+                <li
+                  key={status.id}
+                  className="p-4 border-2 border-gray-200 dark:border-gray-700 rounded-lg"
+                >
+                  {/* Platform name + badge */}
+                  <div className="flex items-center gap-2 flex-wrap mb-3">
+                    <span className="text-base font-semibold">{platformName}</span>
+                    {isReported && (
+                      <span
+                        aria-label="Signalé : l'audiodescription serait potentiellement indisponible"
+                        className="inline-flex items-center px-2 py-0.5 rounded text-xs font-semibold bg-red-600 text-white"
+                      >
+                        Signalé
+                      </span>
+                    )}
                   </div>
-                )}
 
-                <div className="flex flex-wrap gap-3">
-                  {status.lien && (
-                    <a
-                      href={status.lien}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      aria-label={`Voir ${content.title} sur ${platformName} (nouvel onglet)`}
-                      className="px-4 py-2 min-h-touch text-sm font-medium bg-black dark:bg-white text-white dark:text-black rounded hover:bg-gray-800 dark:hover:bg-gray-200 focus-visible:outline-none focus-visible:ring focus-visible:ring-offset-2 focus-visible:ring-black dark:focus-visible:ring-white inline-flex items-center"
-                    >
-                      Voir sur {platformName} ↗
-                    </a>
+                  {/* Actions row */}
+                  <div className="flex flex-wrap items-center gap-3">
+                    {status.lien ? (
+                      <a
+                        href={status.lien}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        aria-label={`Voir ${content.title} sur ${platformName} (nouvel onglet)`}
+                        className="px-4 py-2 min-h-touch text-sm font-medium bg-black dark:bg-white text-white dark:text-black rounded hover:bg-gray-800 dark:hover:bg-gray-200 focus-visible:outline-none focus-visible:ring focus-visible:ring-offset-2 focus-visible:ring-black dark:focus-visible:ring-white inline-flex items-center"
+                      >
+                        Voir sur {platformName} ↗
+                      </a>
+                    ) : searchHref ? (
+                      <a
+                        href={searchHref}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        aria-label={`Rechercher ${content.title} sur ${platformName} (nouvel onglet)`}
+                        className="px-4 py-2 min-h-touch text-sm font-medium bg-black dark:bg-white text-white dark:text-black rounded hover:bg-gray-800 dark:hover:bg-gray-200 focus-visible:outline-none focus-visible:ring focus-visible:ring-offset-2 focus-visible:ring-black dark:focus-visible:ring-white inline-flex items-center"
+                      >
+                        Rechercher sur {platformName} ↗
+                      </a>
+                    ) : null}
+
+                    {/* Plus d'options dropdown — utilisateurs connectés seulement */}
+                    {user && (
+                      <div className="relative">
+                        <button
+                          ref={(el) => { menuBtnRefs.current[status.id] = el }}
+                          aria-haspopup="menu"
+                          aria-expanded={isMenuOpen}
+                          aria-label={`Plus d'options pour ${platformName}`}
+                          onClick={() => setOpenMenuId(isMenuOpen ? null : status.id)}
+                          className="px-4 py-2 min-h-touch text-sm font-medium border-2 border-black dark:border-white rounded hover:bg-gray-100 dark:hover:bg-gray-800 focus-visible:outline-none focus-visible:ring focus-visible:ring-offset-2 focus-visible:ring-black dark:focus-visible:ring-white"
+                        >
+                          Plus d'options
+                        </button>
+
+                        {isMenuOpen && (
+                          <ul
+                            ref={(el) => { menuRefs.current[status.id] = el }}
+                            role="menu"
+                            aria-label={`Options pour ${platformName}`}
+                            onKeyDown={(e) => handleMenuKeyDown(e, status.id)}
+                            className="absolute left-0 top-full mt-1 z-10 min-w-max bg-white dark:bg-gray-900 border-2 border-black dark:border-white rounded shadow-lg py-1"
+                          >
+                            <li role="none">
+                              <button
+                                role="menuitem"
+                                tabIndex={-1}
+                                onClick={() => {
+                                  setOpenMenuId(null)
+                                  setActiveReportId(status.id)
+                                }}
+                                className="w-full text-left px-4 py-2 text-sm hover:bg-gray-100 dark:hover:bg-gray-800 focus:outline-none focus:bg-gray-100 dark:focus:bg-gray-800"
+                              >
+                                Signaler l'absence d'audiodescription
+                              </button>
+                            </li>
+                            <li role="none">
+                              <button
+                                role="menuitem"
+                                tabIndex={-1}
+                                onClick={() => {
+                                  setOpenMenuId(null)
+                                  setLinkDraft((prev) => ({ ...prev, [status.id]: status.lien || '' }))
+                                  setEditingLinkId(status.id)
+                                }}
+                                className="w-full text-left px-4 py-2 text-sm hover:bg-gray-100 dark:hover:bg-gray-800 focus:outline-none focus:bg-gray-100 dark:focus:bg-gray-800"
+                              >
+                                {status.lien ? 'Modifier le lien vers la plateforme' : 'Ajouter le lien vers la plateforme'}
+                              </button>
+                            </li>
+                          </ul>
+                        )}
+                      </div>
+                    )}
+                  </div>
+
+                  {/* Link edit form */}
+                  {isEditingLink && (user || isAdmin) && (
+                    <div className="mt-4 flex flex-col gap-2">
+                      <label htmlFor={`link-input-${status.id}`} className="text-sm font-medium">
+                        Lien vers {platformName}
+                      </label>
+                      <input
+                        id={`link-input-${status.id}`}
+                        type="url"
+                        value={linkDraft[status.id] ?? ''}
+                        onChange={(e) =>
+                          setLinkDraft((prev) => ({ ...prev, [status.id]: e.target.value }))
+                        }
+                        placeholder="https://…"
+                        className="w-full px-3 py-2 min-h-touch border-2 border-black dark:border-white rounded bg-white dark:bg-gray-900 text-sm focus-visible:outline-none focus-visible:ring focus-visible:ring-offset-2 focus-visible:ring-black dark:focus-visible:ring-white"
+                      />
+                      <div className="flex gap-3">
+                        <button
+                          disabled={linkSaving[status.id]}
+                          onClick={() => handleSaveLink(status.id)}
+                          className="px-4 py-2 min-h-touch text-sm font-medium bg-black dark:bg-white text-white dark:text-black rounded hover:bg-gray-800 dark:hover:bg-gray-200 focus-visible:outline-none focus-visible:ring focus-visible:ring-offset-2 focus-visible:ring-black dark:focus-visible:ring-white disabled:opacity-60"
+                        >
+                          {linkSaving[status.id] ? 'Enregistrement…' : 'Enregistrer'}
+                        </button>
+                        <button
+                          onClick={() => setEditingLinkId(null)}
+                          className="px-4 py-2 min-h-touch text-sm font-medium underline hover:no-underline focus-visible:outline-none focus-visible:ring focus-visible:ring-offset-2 focus-visible:ring-black dark:focus-visible:ring-white"
+                        >
+                          Annuler
+                        </button>
+                      </div>
+                    </div>
                   )}
 
-                  <button
-                    aria-label={
-                      validated
-                        ? `Validation enregistrée pour ${platformName}`
-                        : `Confirmer que l'audiodescription est disponible sur ${platformName}`
-                    }
-                    disabled={validated}
-                    onClick={() => handleValidate(status.id, status.platform)}
-                    className="px-4 py-2 min-h-touch text-sm font-medium border-2 border-black dark:border-white rounded hover:bg-gray-100 dark:hover:bg-gray-800 focus-visible:outline-none focus-visible:ring focus-visible:ring-offset-2 focus-visible:ring-black dark:focus-visible:ring-white disabled:opacity-60 disabled:cursor-not-allowed"
-                  >
-                    {validated ? "L'AD est confirmée ✓" : "L'AD est toujours disponible"}
-                  </button>
+                  {/* Report form */}
+                  {isReportOpen && (
+                    <ContributionForm
+                      contentId={content.id}
+                      contentTitle={content.title}
+                      platform={platformName}
+                      onClose={() => setActiveReportId(null)}
+                      onReport={() => setReportedIds((prev) => new Set([...prev, status.id]))}
+                      returnFocusRef={{ current: menuBtnRefs.current[status.id] }}
+                    />
+                  )}
+                </li>
+              )
+            })}
+          </ul>
 
+          {/* Add platform */}
+          {user && (() => {
+            const existingPlatforms = new Set(adStatuses.map((s) => s.platform))
+            const availablePlatforms = PLATFORMS.filter((p) => !existingPlatforms.has(p.value))
+            if (availablePlatforms.length === 0) return null
+            return (
+              <div className="mt-4">
+                {!addingPlatform ? (
                   <button
-                    ref={(el) => {
-                      reportButtonRefs.current[status.id] = el
+                    onClick={() => {
+                      setNewPlatform(availablePlatforms[0].value)
+                      setAddingPlatform(true)
                     }}
-                    aria-label={`Signaler que l'audiodescription n'est plus disponible sur ${platformName} pour ${content.title}`}
-                    aria-expanded={isReportOpen}
-                    onClick={() =>
-                      isReportOpen
-                        ? setActiveReportId(null)
-                        : setActiveReportId(status.id)
-                    }
-                    className="px-4 py-2 min-h-touch text-sm font-medium underline hover:no-underline focus-visible:outline-none focus-visible:ring focus-visible:ring-offset-2 focus-visible:ring-black dark:focus-visible:ring-white"
+                    className="text-sm font-medium underline hover:no-underline focus-visible:outline-none focus-visible:ring focus-visible:ring-offset-2 focus-visible:ring-black dark:focus-visible:ring-white"
                   >
-                    {"L'AD n'est plus disponible"}
+                    + Ajouter une plateforme
                   </button>
-                </div>
-
-                {isReportOpen && (
-                  <ContributionForm
-                    contentId={content.id}
-                    contentTitle={content.title}
-                    platform={platformName}
-                    onClose={() => setActiveReportId(null)}
-                    returnFocusRef={{ current: reportButtonRefs.current[status.id] }}
-                  />
+                ) : (
+                  <div className="flex flex-col gap-4 p-4 border-2 border-gray-200 dark:border-gray-700 rounded-lg">
+                    <div>
+                      <label htmlFor="new-platform-select" className="block text-sm font-medium mb-2">
+                        Plateforme
+                      </label>
+                      <select
+                        id="new-platform-select"
+                        value={newPlatform}
+                        onChange={(e) => setNewPlatform(e.target.value)}
+                        className="w-full max-w-xs px-3 py-2 min-h-touch border-2 border-black dark:border-white rounded bg-white dark:bg-gray-900 text-sm focus:outline-none focus:ring focus:ring-offset-2 focus:ring-black dark:focus:ring-white"
+                      >
+                        {availablePlatforms.map((p) => (
+                          <option key={p.value} value={p.value}>{p.label}</option>
+                        ))}
+                      </select>
+                    </div>
+                    <div>
+                      <label htmlFor="new-platform-link" className="block text-sm font-medium mb-2">
+                        Ajouter le lien vers le contenu sur {PLATFORM_LABELS[newPlatform] || newPlatform}
+                      </label>
+                      <input
+                        id="new-platform-link"
+                        type="url"
+                        value={newPlatformLink}
+                        onChange={(e) => setNewPlatformLink(e.target.value)}
+                        placeholder="https://…"
+                        className="w-full px-3 py-2 min-h-touch border-2 border-black dark:border-white rounded bg-white dark:bg-gray-900 text-sm focus-visible:outline-none focus-visible:ring focus-visible:ring-offset-2 focus-visible:ring-black dark:focus-visible:ring-white"
+                      />
+                    </div>
+                    {addPlatformError && (
+                      <p role="alert" className="text-sm text-red-700 dark:text-red-400">
+                        {addPlatformError}
+                      </p>
+                    )}
+                    <div className="flex gap-3">
+                      <button
+                        disabled={addingPlatformSaving}
+                        onClick={handleAddPlatform}
+                        className="px-4 py-2 min-h-touch text-sm font-medium bg-black dark:bg-white text-white dark:text-black rounded hover:bg-gray-800 dark:hover:bg-gray-200 focus-visible:outline-none focus-visible:ring focus-visible:ring-offset-2 focus-visible:ring-black dark:focus-visible:ring-white disabled:opacity-60"
+                      >
+                        {addingPlatformSaving ? 'Envoi…' : 'Confirmer'}
+                      </button>
+                      <button
+                        onClick={() => { setAddingPlatform(false); setAddPlatformError(''); setNewPlatformLink('') }}
+                        className="px-4 py-2 min-h-touch text-sm font-medium underline hover:no-underline focus-visible:outline-none focus-visible:ring focus-visible:ring-offset-2 focus-visible:ring-black dark:focus-visible:ring-white"
+                      >
+                        Annuler
+                      </button>
+                    </div>
+                  </div>
                 )}
-              </li>
+              </div>
             )
-          })}
-        </ul>
+          })()}
+
+          {!user && (
+            <p className="mt-4 text-sm text-gray-600 dark:text-gray-400">
+              <Link
+                to="/connexion"
+                state={{ from: location.pathname }}
+                className="font-medium underline hover:no-underline focus-visible:outline-none focus-visible:ring focus-visible:ring-offset-2 focus-visible:ring-black dark:focus-visible:ring-white"
+              >
+                Connectez-vous
+              </Link>{' '}
+              pour signaler l'audiodescription.
+            </p>
+          )}
+        </>
+      )}
+
+      {isAdmin && (
+        <AdminEditContent
+          contentId={content.id}
+          onUpdate={(updated) => setContent(c => ({ ...c, ...updated }))}
+          showToast={showToast}
+        />
       )}
     </section>
   )

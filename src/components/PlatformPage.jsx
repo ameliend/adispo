@@ -2,7 +2,6 @@ import { useEffect, useMemo, useState } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
 import { getContentsByPlatform } from '../lib/supabase.js'
 import { PLATFORM_LABELS } from '../lib/platforms.js'
-import TrustBadge, { getTrustLevel } from './TrustBadge.jsx'
 import { posterUrl } from '../lib/tmdb.js'
 
 export default function PlatformPage() {
@@ -24,11 +23,23 @@ export default function PlatformPage() {
   }, [platform])
 
   const genres = useMemo(() => {
-    const set = new Set(contents.map(c => c.genre).filter(Boolean))
+    const set = new Set()
+    contents.forEach(c => {
+      if (c.genre) {
+        c.genre.split(',').forEach(g => {
+          const trimmed = g.trim()
+          if (trimmed) set.add(trimmed)
+        })
+      }
+    })
     return [...set].sort((a, b) => a.localeCompare(b, 'fr'))
   }, [contents])
 
-  const filtered = genre ? contents.filter(c => c.genre === genre) : contents
+  const filtered = genre
+    ? contents.filter(c =>
+        c.genre && c.genre.split(',').map(g => g.trim()).includes(genre)
+      )
+    : contents
 
   return (
     <section aria-labelledby="platform-page-title">
@@ -58,14 +69,14 @@ export default function PlatformPage() {
         <>
           {genres.length > 0 && (
             <div className="mb-4">
-              <label htmlFor="genre-filter" className="text-sm font-medium mr-2">
+              <label htmlFor="platform-genre-filter" className="block text-sm font-medium mb-2">
                 Filtrer par genre
               </label>
               <select
-                id="genre-filter"
+                id="platform-genre-filter"
                 value={genre}
                 onChange={e => setGenre(e.target.value)}
-                className="text-sm border-2 border-black dark:border-white rounded px-2 py-1 bg-white dark:bg-black focus-visible:outline-none focus-visible:ring focus-visible:ring-offset-2 focus-visible:ring-black dark:focus-visible:ring-white"
+                className="w-full max-w-full text-sm border-2 border-black dark:border-white rounded px-3 py-2 min-h-touch bg-white dark:bg-black focus:outline-none focus:ring focus:ring-offset-2 focus:ring-black dark:focus:ring-white"
               >
                 <option value="">Tous les genres</option>
                 {genres.map(g => (
@@ -81,47 +92,38 @@ export default function PlatformPage() {
 
           <ul className="space-y-2">
             {filtered.map((content) => {
-              const adStatus = content.ad_status?.[0]
-              const trustLevel = getTrustLevel(adStatus?.validation_count)
               return (
                 <li key={content.id}>
                   <button
                     onClick={() => navigate(`/contenu/${content.id}`, { state: { content } })}
                     className="w-full text-left p-3 border-2 border-gray-200 dark:border-gray-700 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-800 hover:border-black dark:hover:border-white focus-visible:outline-none focus-visible:ring focus-visible:ring-offset-2 focus-visible:ring-black dark:focus-visible:ring-white"
-                    aria-label={[content.title, content.year, content.genre, trustLevel].filter(Boolean).join(', ')}
+                    aria-label={[content.title, content.year, content.genre].filter(Boolean).join(', ')}
                   >
-                    <div className="flex items-center justify-between gap-4 flex-nowrap">
-                      <div className="flex items-center gap-3 min-w-0">
-                        {posterUrl(content.poster_path) && (
-                          <img
-                            src={posterUrl(content.poster_path)}
-                            alt=""
-                            aria-hidden="true"
-                            width={30}
-                            height={45}
-                            className="rounded flex-shrink-0 object-cover"
-                            loading="lazy"
-                          />
-                        )}
-                        <div className="min-w-0">
-                          <span className="font-semibold truncate block">{content.title}</span>
-                          {content.year && (
-                            <span className="text-sm text-gray-700 dark:text-gray-300 ml-2">
-                              <span aria-hidden="true">(</span>{content.year}<span aria-hidden="true">)</span>
-                            </span>
-                          )}
-                          {content.genre && (
-                            <span className="text-sm text-gray-600 dark:text-gray-400 ml-2">
-                              — {content.genre}
-                            </span>
-                          )}
-                        </div>
-                      </div>
-                      {adStatus && adStatus.validation_count > 0 && (
-                        <div className="flex-shrink-0">
-                          <TrustBadge validationCount={adStatus.validation_count} />
-                        </div>
+                    <div className="flex items-center gap-3 min-w-0">
+                      {posterUrl(content.poster_path) && (
+                        <img
+                          src={posterUrl(content.poster_path)}
+                          alt=""
+                          aria-hidden="true"
+                          width={30}
+                          height={45}
+                          className="rounded flex-shrink-0 object-cover"
+                          loading="lazy"
+                        />
                       )}
+                      <div className="min-w-0">
+                        <span className="font-semibold truncate block">{content.title}</span>
+                        {content.year && (
+                          <span className="text-sm text-gray-700 dark:text-gray-300 ml-2">
+                            <span aria-hidden="true">(</span>{content.year}<span aria-hidden="true">)</span>
+                          </span>
+                        )}
+                        {content.genre && (
+                          <span className="text-sm text-gray-600 dark:text-gray-400 ml-2">
+                            — {content.genre}
+                          </span>
+                        )}
+                      </div>
                     </div>
                   </button>
                 </li>

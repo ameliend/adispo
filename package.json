@@ -6,7 +6,8 @@
   "scripts": {
     "dev": "vite",
     "build": "vite build",
-    "preview": "vite preview"
+    "preview": "vite preview",
+    "generate-sql": "node scripts/generate-sql.js"
   },
   "dependencies": {
     "@stripe/react-stripe-js": "^6.2.0",
