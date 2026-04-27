@@ -11,6 +11,7 @@ import AuthPage from './components/AuthPage.jsx'
 import ActivationPage from './components/ActivationPage.jsx'
 import PlaylistPage from './components/PlaylistPage.jsx'
 import AccountPage from './components/AccountPage.jsx'
+import SupportPage from './components/SupportPage.jsx'
 
 function Layout() {
   const navigate = useNavigate()
@@ -146,14 +147,7 @@ function Layout() {
           </h1>
 
           <div className="relative flex-shrink-0" ref={menuRef}>
-            {!authLoading && !user ? (
-              <Link
-                to="/connexion"
-                className="px-4 py-2 min-h-touch text-sm font-medium border-2 border-black dark:border-white rounded hover:bg-gray-100 dark:hover:bg-gray-800 focus-visible:outline-none focus-visible:ring focus-visible:ring-offset-2 focus-visible:ring-black dark:focus-visible:ring-white inline-flex items-center"
-              >
-                Se connecter
-              </Link>
-            ) : user && (
+            {!authLoading && (
               <>
                 <button
                   ref={menuBtnRef}
@@ -172,23 +166,54 @@ function Layout() {
                     id="header-menu"
                     role="menu"
                     aria-label="Menu principal"
-                    className="absolute right-0 top-full mt-1 min-w-44 bg-white dark:bg-black border-2 border-black dark:border-white rounded-lg shadow-lg py-1 z-50"
+                    className="absolute right-0 top-full mt-1 min-w-52 bg-white dark:bg-black border-2 border-black dark:border-white rounded-lg shadow-lg py-1 z-50"
                   >
-                    <Link
-                      role="menuitem"
-                      to="/compte"
-                      onClick={closeMenu}
-                      className="block px-4 py-3 text-sm hover:bg-gray-100 dark:hover:bg-gray-800 focus-visible:outline-none focus-visible:ring focus-visible:ring-inset focus-visible:ring-black dark:focus-visible:ring-white"
-                    >
-                      Mon compte
-                    </Link>
-                    <button
-                      role="menuitem"
-                      onClick={handleSignOut}
-                      className="w-full text-left px-4 py-3 text-sm hover:bg-gray-100 dark:hover:bg-gray-800 focus-visible:outline-none focus-visible:ring focus-visible:ring-inset focus-visible:ring-black dark:focus-visible:ring-white"
-                    >
-                      Déconnexion
-                    </button>
+                    {user ? (
+                      <>
+                        <Link
+                          role="menuitem"
+                          to="/compte"
+                          onClick={closeMenu}
+                          className="block px-4 py-3 text-sm hover:bg-gray-100 dark:hover:bg-gray-800 focus-visible:outline-none focus-visible:ring focus-visible:ring-inset focus-visible:ring-black dark:focus-visible:ring-white"
+                        >
+                          Mon compte
+                        </Link>
+                        <Link
+                          role="menuitem"
+                          to="/soutenir"
+                          onClick={closeMenu}
+                          className="block px-4 py-3 text-sm hover:bg-gray-100 dark:hover:bg-gray-800 focus-visible:outline-none focus-visible:ring focus-visible:ring-inset focus-visible:ring-black dark:focus-visible:ring-white"
+                        >
+                          Soutenir ce projet
+                        </Link>
+                        <button
+                          role="menuitem"
+                          onClick={handleSignOut}
+                          className="w-full text-left px-4 py-3 text-sm hover:bg-gray-100 dark:hover:bg-gray-800 focus-visible:outline-none focus-visible:ring focus-visible:ring-inset focus-visible:ring-black dark:focus-visible:ring-white"
+                        >
+                          Déconnexion
+                        </button>
+                      </>
+                    ) : (
+                      <>
+                        <Link
+                          role="menuitem"
+                          to="/soutenir"
+                          onClick={closeMenu}
+                          className="block px-4 py-3 text-sm hover:bg-gray-100 dark:hover:bg-gray-800 focus-visible:outline-none focus-visible:ring focus-visible:ring-inset focus-visible:ring-black dark:focus-visible:ring-white"
+                        >
+                          Soutenir ce projet
+                        </Link>
+                        <Link
+                          role="menuitem"
+                          to="/connexion"
+                          onClick={closeMenu}
+                          className="block px-4 py-3 text-sm hover:bg-gray-100 dark:hover:bg-gray-800 focus-visible:outline-none focus-visible:ring focus-visible:ring-inset focus-visible:ring-black dark:focus-visible:ring-white"
+                        >
+                          Se connecter
+                        </Link>
+                      </>
+                    )}
                   </div>
                 )}
               </>
@@ -230,6 +255,7 @@ export default function App() {
         <Route path="/activation" element={<ActivationPage />} />
         <Route path="/playlist" element={<PlaylistPage />} />
         <Route path="/compte" element={<AccountPage />} />
+        <Route path="/soutenir" element={<SupportPage />} />
       </Route>
     </Routes>
   )

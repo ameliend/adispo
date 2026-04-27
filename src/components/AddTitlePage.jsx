@@ -7,21 +7,15 @@ import { PLATFORMS, PLATFORM_LABELS } from '../lib/platforms.js'
 export default function AddTitlePage() {
   const navigate = useNavigate()
   const location = useLocation()
-  const { announce, showToast, user, authLoading } = useOutletContext()
-  const preselected = location.state?.selectedTmdb || null
+  const { announce, showToast } = useOutletContext()
+  const initialTitle = location.state?.initialTitle || null
   useEffect(() => { document.title = 'Ajouter un titre — ADispo' }, [])
 
-  useEffect(() => {
-    if (!authLoading && !user) {
-      navigate('/connexion', { state: { from: '/ajouter' }, replace: true })
-    }
-  }, [authLoading, user, navigate])
-
-  const [step, setStep] = useState(preselected ? 2 : 1)
+  const [step, setStep] = useState(initialTitle ? 2 : 1)
   const [tmdbQuery, setTmdbQuery] = useState('')
   const [tmdbResults, setTmdbResults] = useState([])
   const [tmdbStatusMsg, setTmdbStatusMsg] = useState('')
-  const [selectedTitle, setSelectedTitle] = useState(preselected)
+  const [selectedTitle, setSelectedTitle] = useState(initialTitle ? { title: initialTitle } : null)
   const [selectedPlatforms, setSelectedPlatforms] = useState([])
   const [platformLinks, setPlatformLinks] = useState({})
   const [isSubmitting, setIsSubmitting] = useState(false)
@@ -129,8 +123,7 @@ export default function AddTitlePage() {
     setIsSubmitting(false)
 
     if (error) {
-      console.error('[AddTitlePage] submit error:', error)
-      setSubmitError(`Une erreur est survenue lors de l'envoi. Veuillez réessayer. (${error.message || error.code || 'inconnu'})`)
+      setSubmitError("Une erreur est survenue lors de l'envoi. Veuillez réessayer.")
       return
     }
 
@@ -139,9 +132,6 @@ export default function AddTitlePage() {
   }
 
   const platformLabel = (val) => PLATFORM_LABELS[val] || val
-
-  if (authLoading) return <p className="text-base text-gray-700 dark:text-gray-300">Chargement…</p>
-  if (!user) return null
 
   return (
     <>
@@ -333,7 +323,7 @@ export default function AddTitlePage() {
               Suivant
             </button>
             <button
-              onClick={preselected ? () => navigate(-1) : goBackToStep1}
+              onClick={goBackToStep1}
               className="px-6 py-3 min-h-touch border-2 border-black dark:border-white font-medium rounded hover:bg-gray-100 dark:hover:bg-gray-800 focus-visible:outline-none focus-visible:ring focus-visible:ring-offset-2 focus-visible:ring-black dark:focus-visible:ring-white"
             >
               Précédent
