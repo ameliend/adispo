@@ -178,50 +178,45 @@ export default function SearchPage() {
 
         {/* TMDB autocomplete results */}
         {tmdbResults.length > 0 && (
-          <fieldset className="mb-4">
-            <legend className="font-medium mb-3">Sélectionnez un titre</legend>
-            <div className="space-y-2">
+          <div className="mb-4">
+            <h3 className="font-medium mb-3">Sélectionnez un titre</h3>
+            <ul className="space-y-2">
               {tmdbResults.map((r) => (
-                <label
-                  key={r.tmdbId}
-                  aria-label={[r.title, r.year, r.type === 'tv' ? 'Série' : 'Film'].filter(Boolean).join(', ')}
-                  className="flex items-center gap-3 p-3 border-2 rounded cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-800 border-gray-300 dark:border-gray-600 has-[:checked]:border-black dark:has-[:checked]:border-white"
-                >
-                  <input
-                    type="radio"
-                    name="tmdb-result"
-                    value={r.tmdbId}
-                    checked={selectedTmdb?.tmdbId === r.tmdbId}
-                    onChange={() => handleTmdbSelect(r)}
-                    className="flex-shrink-0"
-                  />
-                  <span aria-hidden="true" className="flex items-center gap-3 min-w-0">
-                    {r.posterPath && (
-                      <img
-                        src={r.posterPath}
-                        alt=""
-                        width={30}
-                        height={45}
-                        className="rounded flex-shrink-0 object-cover"
-                        loading="lazy"
-                      />
-                    )}
-                    <span>
-                      <span className="font-medium">{r.title}</span>
-                      {r.year && (
-                        <span className="text-sm text-gray-700 dark:text-gray-300 ml-2">
-                          <span aria-hidden="true">(</span>{r.year}<span aria-hidden="true">)</span>
-                        </span>
+                <li key={r.tmdbId}>
+                  <button
+                    type="button"
+                    onClick={() => handleTmdbSelect(r)}
+                    aria-label={[r.title, r.year, r.type === 'tv' ? 'Série' : 'Film'].filter(Boolean).join(', ')}
+                    className="w-full text-left flex items-center gap-3 p-3 border-2 border-gray-300 dark:border-gray-600 rounded hover:bg-gray-50 dark:hover:bg-gray-800 hover:border-black dark:hover:border-white focus-visible:outline-none focus-visible:ring focus-visible:ring-offset-2 focus-visible:ring-black dark:focus-visible:ring-white"
+                  >
+                    <span aria-hidden="true" className="flex items-center gap-3 min-w-0">
+                      {r.posterPath && (
+                        <img
+                          src={r.posterPath}
+                          alt=""
+                          width={30}
+                          height={45}
+                          className="rounded flex-shrink-0 object-cover"
+                          loading="lazy"
+                        />
                       )}
-                      <span className="text-sm text-gray-600 dark:text-gray-400 ml-2">
-                        — {r.type === 'tv' ? 'Série' : 'Film'}
+                      <span>
+                        <span className="font-medium">{r.title}</span>
+                        {r.year && (
+                          <span className="text-sm text-gray-700 dark:text-gray-300 ml-2">
+                            <span aria-hidden="true">(</span>{r.year}<span aria-hidden="true">)</span>
+                          </span>
+                        )}
+                        <span className="text-sm text-gray-600 dark:text-gray-400 ml-2">
+                          — {r.type === 'tv' ? 'Série' : 'Film'}
+                        </span>
                       </span>
                     </span>
-                  </span>
-                </label>
+                  </button>
+                </li>
               ))}
-            </div>
-          </fieldset>
+            </ul>
+          </div>
         )}
 
         {/* Checking DB */}
