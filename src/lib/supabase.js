@@ -339,6 +339,17 @@ export async function checkContentExists(tmdbId, platforms) {
   }
 }
 
+export async function getContentsCount() {
+  try {
+    const { count, error } = await supabase
+      .from('contents')
+      .select('*', { count: 'exact', head: true })
+    return { count, error }
+  } catch (err) {
+    return { count: null, error: err }
+  }
+}
+
 export async function getRandomByPlatform(platform, limit = 10) {
   try {
     const { data: adData, error } = await supabase
