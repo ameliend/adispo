@@ -350,6 +350,22 @@ export async function getContentsCount() {
   }
 }
 
+export async function getRecentContents(limit = 10) {
+  try {
+    const { data, error } = await supabase
+      .from('contents')
+      .select(`
+        id, tmdb_id, title, year, genre, type, poster_path,
+        ad_status (id, platform, status, trust_level, validation_count, lien)
+      `)
+      .order('created_at', { ascending: false })
+      .limit(limit)
+    return { data, error }
+  } catch (err) {
+    return { data: null, error: err }
+  }
+}
+
 export async function getRandomByPlatform(platform, limit = 10) {
   try {
     const { data: adData, error } = await supabase
