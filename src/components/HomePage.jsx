@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react'
 import { useNavigate, Link, useOutletContext } from 'react-router-dom'
-import { getRandomByPlatform } from '../lib/supabase.js'
+import { getRandomByPlatform, getContentsCount, getRecentContents } from '../lib/supabase.js'
 import { posterUrl } from '../lib/tmdb.js'
 
 
@@ -51,21 +51,32 @@ export default function HomePage() {
   const [canalContents, setCanalContents] = useState([])
   const [netflixContents, setNetflixContents] = useState([])
   const [appleContents, setAppleContents] = useState([])
+  const [disneyContents, setDisneyContents] = useState([])
+  const [recentContents, setRecentContents] = useState([])
+  const [contentsCount, setContentsCount] = useState(null)
 
   useEffect(() => {
     document.title = 'ADispo — Audiodescription sur les plateformes de streaming'
     getRandomByPlatform('canal', 10).then(({ data }) => { if (data) setCanalContents(data) })
     getRandomByPlatform('netflix', 10).then(({ data }) => { if (data) setNetflixContents(data) })
     getRandomByPlatform('apple', 10).then(({ data }) => { if (data) setAppleContents(data) })
+    getRandomByPlatform('disney', 10).then(({ data }) => { if (data) setDisneyContents(data) })
+    getRecentContents(10).then(({ data }) => { if (data) setRecentContents(data) })
+    getContentsCount().then(({ count }) => { if (count !== null) setContentsCount(count) })
   }, [])
 
   return (
     <>
       <div className="mb-10">
-        <p className="text-base text-gray-700 dark:text-gray-300 mb-4">
+        <p className="text-base text-gray-700 dark:text-gray-300 mb-2">
           Vérifiez si l'audiodescription est disponible pour un film ou une série sur
           les grandes plateformes de streaming.
         </p>
+        {contentsCount !== null && (
+          <p className="text-base text-gray-700 dark:text-gray-300 mb-4">
+            Déjà plus de {contentsCount} films et séries accessibles.
+          </p>
+        )}
         <Link
           to="/recherche"
           className="inline-block px-6 py-3 min-h-touch bg-black dark:bg-white text-white dark:text-black font-semibold rounded hover:bg-gray-800 dark:hover:bg-gray-200 focus-visible:outline-none focus-visible:ring focus-visible:ring-offset-2 focus-visible:ring-black dark:focus-visible:ring-white"
@@ -148,6 +159,37 @@ export default function HomePage() {
           </div>
           <ul className="space-y-2">
             {appleContents.map((content) => (
+              <PlatformMiniCard key={content.id} content={content} />
+            ))}
+          </ul>
+        </section>
+      )}
+
+      {disneyContents.length > 0 && (
+        <section aria-labelledby="disney-section-title" className="mb-12">
+          <div className="flex items-baseline justify-between gap-4 mb-4 flex-wrap">
+            <h2 id="disney-section-title" className="text-xl font-bold">Disney+</h2>
+            <Link
+              to="/plateforme/disney"
+              aria-label="Voir tous les contenus sur Disney+"
+              className="text-sm font-medium underline hover:no-underline focus-visible:outline-none focus-visible:ring focus-visible:ring-offset-2 focus-visible:ring-black dark:focus-visible:ring-white"
+            >
+              Voir tous les contenus →
+            </Link>
+          </div>
+          <ul className="space-y-2">
+            {disneyContents.map((content) => (
+              <PlatformMiniCard key={content.id} content={content} />
+            ))}
+          </ul>
+        </section>
+      )}
+
+      {recentContents.length > 0 && (
+        <section aria-labelledby="recent-section-title" className="mb-12">
+          <h2 id="recent-section-title" className="text-xl font-bold mb-4">Les ajouts récents</h2>
+          <ul className="space-y-2">
+            {recentContents.map((content) => (
               <PlatformMiniCard key={content.id} content={content} />
             ))}
           </ul>
