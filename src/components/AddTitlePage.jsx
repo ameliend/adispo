@@ -8,14 +8,14 @@ export default function AddTitlePage() {
   const navigate = useNavigate()
   const location = useLocation()
   const { announce, showToast } = useOutletContext()
-  const initialTitle = location.state?.initialTitle || null
+  const initialTmdb = location.state?.selectedTmdb || null
   useEffect(() => { document.title = 'Ajouter un titre — ADispo' }, [])
 
-  const [step, setStep] = useState(initialTitle ? 2 : 1)
+  const [step, setStep] = useState(initialTmdb ? 2 : 1)
   const [tmdbQuery, setTmdbQuery] = useState('')
   const [tmdbResults, setTmdbResults] = useState([])
   const [tmdbStatusMsg, setTmdbStatusMsg] = useState('')
-  const [selectedTitle, setSelectedTitle] = useState(initialTitle ? { title: initialTitle } : null)
+  const [selectedTitle, setSelectedTitle] = useState(initialTmdb || null)
   const [selectedPlatforms, setSelectedPlatforms] = useState([])
   const [platformLinks, setPlatformLinks] = useState({})
   const [isSubmitting, setIsSubmitting] = useState(false)
@@ -33,6 +33,23 @@ export default function AddTitlePage() {
   useEffect(() => {
     headingRefs[step]?.current?.focus()
   }, [step]) // eslint-disable-line react-hooks/exhaustive-deps
+
+  // Fetch TMDB details when arriving with a pre-selected title from SearchPage
+  useEffect(() => {
+    if (!initialTmdb?.tmdbId || !initialTmdb?.type) return
+    setIsFetchingDetails(true)
+    getTmdbDetails(initialTmdb.tmdbId, initialTmdb.type).then(({ data }) => {
+      if (data) {
+        setSelectedTitle((prev) => ({
+          ...prev,
+          genre: data.genre || prev?.genre || null,
+          synopsis: data.synopsis || prev?.synopsis || '',
+          posterPath: data.posterPath || prev?.posterPath,
+        }))
+      }
+      setIsFetchingDetails(false)
+    })
+  }, []) // eslint-disable-line react-hooks/exhaustive-deps
 
   // Debounced TMDB search
   useEffect(() => {
