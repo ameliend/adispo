@@ -78,7 +78,24 @@ Reponds UNIQUEMENT avec un tableau JSON valide, sans texte autour :
 
     if (!geminiRes.ok) {
       console.error('Gemini API error:', geminiRes.status, JSON.stringify(geminiData))
-      return respond({ results: [], query, error: 'Gemini API error' })
+      // Fallback: keyword search directly in catalog when Gemini is unavailable
+      const normalise = (s: string) =>
+        s.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/[''’ʼʼ`]/g, "'").replace(/[^\w\s']/g, ' ').replace(/\s+/g, ' ').trim()
+      const words = (s: string) => new Set(s.split(/[\s']+/).filter((w) => w.length >= 2))
+      const qw = words(normalise(query))
+      const fallbackResults = (catalog ?? [])
+        .map((c) => {
+          const cw = words(normalise(c.title + ' ' + (c.genre ?? '') + ' ' + (c.synopsis ?? '').slice(0, 200)))
+          const inter = [...qw].filter((w) => cw.has(w)).length
+          const union = new Set([...qw, ...cw]).size
+          return { content: c, score: union === 0 ? 0 : inter / union, reason: 'Correspond à votre recherche.' }
+        })
+        .filter((r) => r.score >= 0.05)
+        .sort((a, b) => b.score - a.score)
+        .slice(0, 5)
+        .map(({ content, reason }) => ({ content, reason }))
+      console.log(`Gemini unavailable, fallback keyword search: ${fallbackResults.length} results for "${query}"`)
+      return respond({ results: fallbackResults, query, fallback: true })
     }
 
     const raw = geminiData.candidates?.[0]?.content?.parts?.[0]?.text ?? ''
