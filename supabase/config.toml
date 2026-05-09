@@ -1,2 +1,9 @@
 [functions.create-payment-intent]
 verify_jwt = false
+
+[functions.ai-search]
+verify_jwt = false
+
+[functions.cleanup-inactive-accounts]
+verify_jwt = false
+schedule = "0 3 * * 1"   # Chaque lundi à 3h UTC
