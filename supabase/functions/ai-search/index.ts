@@ -82,18 +82,48 @@ Réponds UNIQUEMENT avec un tableau JSON valide, sans texte autour :
       ? JSON.parse(match[0])
       : []
 
-    // Match recommendations to catalog entries (case-insensitive)
-    const catalogMap = new Map(
-      (catalog ?? []).map((c) => [c.title.toLowerCase().trim(), c])
+    // Normalise titles for matching: lowercase, strip accents, normalise quotes,
+    // collapse whitespace and punctuation. Tolerates Gemini's typographic
+    // variations (curly apostrophes, accents, trailing punctuation).
+    const normalise = (s: string) =>
+      s
+        .toLowerCase()
+        .normalize('NFD')
+        .replace(/[̀-ͯ]/g, '')
+        .replace(/[‘’ʼ`]/g, "'")
+        .replace(/[“”]/g, '"')
+        .replace(/[^\w\s']/g, ' ')
+        .replace(/\s+/g, ' ')
+        .trim()
+
+    const catalogByNormalised = new Map(
+      (catalog ?? []).map((c) => [normalise(c.title), c])
     )
 
     const results = recommendations
       .map((rec) => {
-        const content = catalogMap.get(rec.title.toLowerCase().trim())
-        if (!content) return null
+        const key = normalise(rec.title)
+        let content = catalogByNormalised.get(key)
+
+        // Fallback: substring match (recommendation contains catalog title or vice-versa)
+        if (!content && key.length >= 3) {
+          for (const [catKey, catContent] of catalogByNormalised) {
+            if (catKey === key || catKey.includes(key) || key.includes(catKey)) {
+              content = catContent
+              break
+            }
+          }
+        }
+
+        if (!content) {
+          console.log(`Unmatched: "${rec.title}" → "${key}"`)
+          return null
+        }
         return { content, reason: rec.reason }
       })
       .filter(Boolean)
+
+    console.log(`Gemini: ${recommendations.length} recos, ${results.length} matched for "${query}"`)
 
     return respond({ results, query })
   } catch (err) {
