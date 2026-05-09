@@ -9,7 +9,7 @@ const SpeechRecognitionAPI =
 const BAR_COUNT = 48
 
 export default function VoiceSearch({ onResults, onClose }) {
-  const [phase, setPhase] = useState('listening') // 'listening' | 'processing' | 'error'
+  const [phase, setPhase] = useState('preparing') // 'preparing' | 'listening' | 'processing' | 'error'
   const [transcript, setTranscript] = useState('')
   const [errorMsg, setErrorMsg] = useState('')
 
@@ -20,7 +20,7 @@ export default function VoiceSearch({ onResults, onClose }) {
   const streamRef = useRef(null)
   const rafRef = useRef(null)
   const transcriptRef = useRef('')  // avoid stale closure in onend
-  const phaseRef = useRef('listening')
+  const phaseRef = useRef('preparing')
 
   function setPhaseSync(p) {
     phaseRef.current = p
@@ -120,6 +120,28 @@ export default function VoiceSearch({ onResults, onClose }) {
 
   // ── Speech recognition ───────────────────────────────────────────────────
 
+  // Plays a brief sine-wave beep so the user knows the mic is now active.
+  // Acts as a non-verbal cue (vital for screen-reader users) and lets us avoid
+  // announcing 'listening' through aria-live, which the mic would pick up.
+  async function playStartBeep() {
+    try {
+      const ctx = new AudioContext()
+      const osc = ctx.createOscillator()
+      const gain = ctx.createGain()
+      osc.frequency.value = 880
+      gain.gain.setValueAtTime(0, ctx.currentTime)
+      gain.gain.linearRampToValueAtTime(0.18, ctx.currentTime + 0.02)
+      gain.gain.linearRampToValueAtTime(0, ctx.currentTime + 0.18)
+      osc.connect(gain).connect(ctx.destination)
+      osc.start()
+      osc.stop(ctx.currentTime + 0.2)
+      await new Promise((r) => setTimeout(r, 250))
+      ctx.close()
+    } catch {
+      // Beep failure is non-fatal
+    }
+  }
+
   useEffect(() => {
     if (!SpeechRecognitionAPI) {
       setPhaseSync('error')
@@ -156,7 +178,7 @@ export default function VoiceSearch({ onResults, onClose }) {
     }
 
     recognition.onerror = (e) => {
-      if (phaseRef.current !== 'listening') return
+      if (phaseRef.current !== 'listening' && phaseRef.current !== 'preparing') return
       const messages = {
         'not-allowed': 'Accès au microphone refusé. Vérifiez les permissions du navigateur.',
         'no-speech': 'Aucune parole détectée. Fermez et réessayez.',
@@ -165,10 +187,24 @@ export default function VoiceSearch({ onResults, onClose }) {
       setPhaseSync('error')
     }
 
-    recognition.start()
-    startAudio()
+    // Wait so screen readers can finish announcing the dialog and the
+    // "speak after the beep" instruction before the mic activates. Without
+    // this delay, the screen reader's own voice would be transcribed.
+    const startTimer = setTimeout(async () => {
+      if (phaseRef.current !== 'preparing') return
+      await playStartBeep()
+      if (phaseRef.current !== 'preparing') return
+      setPhaseSync('listening')
+      try {
+        recognition.start()
+      } catch {
+        // Already started or aborted
+      }
+      startAudio()
+    }, 1800)
 
     return () => {
+      clearTimeout(startTimer)
       recognition.abort()
       stopAudio()
     }
@@ -186,7 +222,7 @@ export default function VoiceSearch({ onResults, onClose }) {
     <div
       role="dialog"
       aria-modal="true"
-      aria-label="Recherche vocale intelligente sur le catalogue disponible"
+      aria-label="Recherche vocale intelligente. Préparez-vous à parler après le signal sonore."
       className="fixed inset-0 z-50 bg-black flex flex-col items-center justify-center"
     >
       {/* Close */}
@@ -205,6 +241,7 @@ export default function VoiceSearch({ onResults, onClose }) {
       <div
         className={[
           'mb-8 w-24 h-24 rounded-full flex items-center justify-center transition-all duration-300',
+          phase === 'preparing' ? 'bg-white/10' : '',
           phase === 'listening' ? 'bg-white/10 ring-4 ring-white/20 animate-pulse' : '',
           phase === 'processing' ? 'bg-white/10' : '',
           phase === 'error' ? 'bg-red-900/40' : '',
@@ -231,23 +268,27 @@ export default function VoiceSearch({ onResults, onClose }) {
         </svg>
       </div>
 
-      {/* Status text */}
-      <p
-        aria-live="polite"
-        aria-atomic="true"
-        className="text-white text-xl font-medium mb-4 text-center px-6"
-      >
+      {/* Screen-reader-only live region. Empty during 'listening' so the mic
+          doesn't pick up the screen reader announcing status updates. */}
+      <p aria-live="polite" aria-atomic="true" className="sr-only">
+        {phase === 'preparing' && 'Préparez-vous à parler après le signal sonore.'}
+        {phase === 'processing' && 'Analyse en cours.'}
+        {phase === 'error' && errorMsg}
+      </p>
+
+      {/* Visual status text (no aria-live so the screen reader stays silent
+          during listening, preventing audio feedback into the microphone). */}
+      <p className="text-white text-xl font-medium mb-4 text-center px-6">
+        {phase === 'preparing' && 'Préparation… Parlez après le signal sonore.'}
         {phase === 'listening' && 'Parlez maintenant…'}
         {phase === 'processing' && 'Analyse en cours…'}
         {phase === 'error' && errorMsg}
       </p>
 
-      {/* Live transcript */}
+      {/* Visual transcript only — never put in aria-live during listening,
+          otherwise the screen reader would echo every word into the mic. */}
       {transcript && (
-        <p
-          aria-live="polite"
-          className="text-gray-300 text-lg text-center max-w-lg px-6 italic"
-        >
+        <p className="text-gray-300 text-lg text-center max-w-lg px-6 italic">
           « {transcript} »
         </p>
       )}
