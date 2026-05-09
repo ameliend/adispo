@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useState, useRef } from 'react'
 import { useNavigate, Link, useOutletContext } from 'react-router-dom'
 import { getRandomByPlatform, getContentsCount, getRecentContents } from '../lib/supabase.js'
 import { posterUrl } from '../lib/tmdb.js'
@@ -62,6 +62,8 @@ export default function HomePage() {
   const [showVoiceSearch, setShowVoiceSearch] = useState(false)
   const [aiResults, setAiResults] = useState([])
   const [aiQuery, setAiQuery] = useState('')
+  const [tooltipVisible, setTooltipVisible] = useState(false)
+  const tooltipRef = useRef(null)
 
   function handleAiResults(results, query) {
     setAiResults(results)
@@ -110,40 +112,55 @@ export default function HomePage() {
             Déjà plus de {contentsCount} films et séries accessibles.
           </p>
         )}
-        <button
-          type="button"
-          onClick={() => setShowVoiceSearch(true)}
-          disabled={!isAdmin}
-          aria-label="Recherche vocale intelligente par IA"
-          aria-describedby="ai-search-hint"
-          className="inline-flex items-center gap-3 px-6 py-3 min-h-touch border-2 border-black dark:border-white font-semibold rounded hover:bg-gray-100 dark:hover:bg-gray-800 focus-visible:outline-none focus-visible:ring focus-visible:ring-offset-2 focus-visible:ring-black dark:focus-visible:ring-white disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:bg-transparent dark:disabled:hover:bg-transparent"
+        {/* Tooltip wrapper — mouse stays within the container when moving from
+            button to tooltip, so onMouseLeave never fires mid-hover (WCAG SC 1.4.13). */}
+        <div
+          className="relative inline-block"
+          onMouseEnter={() => !isAdmin && setTooltipVisible(true)}
+          onMouseLeave={() => setTooltipVisible(false)}
         >
-          <svg aria-hidden="true" width="22" height="22" viewBox="0 0 48 48" fill="none">
-            <path
-              d="M24 3 C 25 16, 32 23, 45 24 C 32 25, 25 32, 24 45 C 23 32, 16 25, 3 24 C 16 23, 23 16, 24 3 Z"
-              stroke="currentColor"
-              strokeWidth="3"
-              strokeLinejoin="round"
-              fill="none"
-            />
-          </svg>
-          Recherche vocale intelligente par IA
-        </button>
+          <button
+            type="button"
+            onClick={() => isAdmin && setShowVoiceSearch(true)}
+            aria-label="Recherche vocale intelligente par IA"
+            aria-describedby={!isAdmin ? 'ai-voice-tooltip' : 'ai-search-hint'}
+            onFocus={() => !isAdmin && setTooltipVisible(true)}
+            onBlur={() => setTooltipVisible(false)}
+            onKeyDown={(e) => { if (e.key === 'Escape') setTooltipVisible(false) }}
+            className="inline-flex items-center gap-3 px-6 py-3 min-h-touch border-2 border-black dark:border-white font-semibold rounded hover:bg-gray-100 dark:hover:bg-gray-800 focus-visible:outline-none focus-visible:ring focus-visible:ring-offset-2 focus-visible:ring-black dark:focus-visible:ring-white"
+          >
+            <svg aria-hidden="true" width="22" height="22" viewBox="0 0 48 48" fill="none">
+              <path
+                d="M24 3 C 25 16, 32 23, 45 24 C 32 25, 25 32, 24 45 C 23 32, 16 25, 3 24 C 16 23, 23 16, 24 3 Z"
+                stroke="currentColor"
+                strokeWidth="3"
+                strokeLinejoin="round"
+                fill="none"
+              />
+            </svg>
+            Recherche vocale intelligente par IA
+          </button>
+
+          {!isAdmin && tooltipVisible && (
+            <div
+              id="ai-voice-tooltip"
+              role="tooltip"
+              ref={tooltipRef}
+              className="absolute bottom-full left-0 mb-2 w-72 p-3 bg-gray-900 dark:bg-gray-100 text-white dark:text-gray-900 text-sm rounded-lg shadow-lg z-10"
+            >
+              Cette fonctionnalité est en cours de développement. Pour la tester, contactez-moi.
+              {/* Arrow */}
+              <span
+                aria-hidden="true"
+                className="absolute top-full left-6 border-8 border-transparent border-t-gray-900 dark:border-t-gray-100"
+              />
+            </div>
+          )}
+        </div>
+
         <p id="ai-search-hint" className="mt-3 text-sm text-gray-600 dark:text-gray-400">
           Par exemple : « Je recherche un film de cow-boy » ou « une série coréenne thriller ».
         </p>
-        {!isAdmin && (
-          <p className="mt-3 text-sm text-gray-700 dark:text-gray-300">
-            Cette fonctionnalité est en cours de développement. Pour la tester,{' '}
-            <Link
-              to="/contact"
-              className="font-medium underline hover:no-underline focus-visible:outline-none focus-visible:ring focus-visible:ring-offset-2 focus-visible:ring-black dark:focus-visible:ring-white"
-            >
-              contactez-moi
-            </Link>
-            .
-          </p>
-        )}
 
         {aiResults.length > 0 && (
           <div className="mt-6">
