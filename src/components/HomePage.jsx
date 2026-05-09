@@ -168,29 +168,24 @@ export default function HomePage() {
             <ul className="space-y-4">
               {aiResults.map(({ content, reason }) => (
                 <li key={content.id}>
-                  <article
-                    aria-labelledby={`ai-title-${content.id}`}
-                    className="p-4 border-2 border-gray-300 dark:border-gray-700 rounded-lg hover:border-black dark:hover:border-white transition-colors"
+                  <Link
+                    to={`/contenu/${content.id}`}
+                    aria-label={[content.title, content.year, content.genre].filter(Boolean).join(', ')}
+                    className="block p-4 border-2 border-gray-300 dark:border-gray-700 rounded-lg hover:border-black dark:hover:border-white transition-colors focus-visible:outline-none focus-visible:ring focus-visible:ring-offset-2 focus-visible:ring-black dark:focus-visible:ring-white"
                   >
-                    <h3 id={`ai-title-${content.id}`} className="font-semibold text-base mb-1">
+                    <p className="font-semibold text-base mb-1">
                       {content.title}
                       {content.year && (
                         <span className="ml-2 font-normal text-sm text-gray-600 dark:text-gray-400">
                           ({content.year})
                         </span>
                       )}
-                    </h3>
+                    </p>
                     {content.genre && (
                       <p className="text-sm text-gray-600 dark:text-gray-400 mb-2">{content.genre}</p>
                     )}
-                    <p className="text-sm text-gray-700 dark:text-gray-300 mb-3 italic">{reason}</p>
-                    <button
-                      onClick={() => navigate(`/contenu/${content.id}`)}
-                      className="text-sm font-medium underline hover:no-underline focus-visible:outline-none focus-visible:ring focus-visible:ring-offset-2 focus-visible:ring-black dark:focus-visible:ring-white"
-                    >
-                      Voir les détails →
-                    </button>
-                  </article>
+                    <p className="text-sm text-gray-700 dark:text-gray-300 italic">{reason}</p>
+                  </Link>
                 </li>
               ))}
             </ul>
