@@ -132,9 +132,17 @@ export default function VoiceSearch({ onResults, onClose }) {
       const t = Array.from(e.results).map((r) => r[0].transcript).join('')
       setTranscript(t)
       transcriptRef.current = t
+
+      // Trigger search as soon as speech recognition marks the result as final
+      if (e.results[e.results.length - 1].isFinal && phaseRef.current === 'listening') {
+        setPhaseSync('processing')
+        stopAudio()
+        search(t.trim())
+      }
     }
 
     recognition.onend = () => {
+      // Fallback : if isFinal never fired but we have something
       if (phaseRef.current !== 'listening') return
       if (transcriptRef.current.trim()) {
         search(transcriptRef.current.trim())
