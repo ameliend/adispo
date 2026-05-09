@@ -89,8 +89,13 @@ export default function VoiceSearch({ onResults, onClose }) {
 
   function stopAudio() {
     cancelAnimationFrame(rafRef.current)
-    audioCtxRef.current?.close()
+    rafRef.current = null
+    if (audioCtxRef.current && audioCtxRef.current.state !== 'closed') {
+      audioCtxRef.current.close().catch(() => {})
+    }
+    audioCtxRef.current = null
     streamRef.current?.getTracks().forEach((t) => t.stop())
+    streamRef.current = null
   }
 
   // ── AI search ────────────────────────────────────────────────────────────
@@ -135,8 +140,6 @@ export default function VoiceSearch({ onResults, onClose }) {
 
       // Trigger search as soon as speech recognition marks the result as final
       if (e.results[e.results.length - 1].isFinal && phaseRef.current === 'listening') {
-        setPhaseSync('processing')
-        stopAudio()
         search(t.trim())
       }
     }
