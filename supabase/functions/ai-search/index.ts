@@ -31,7 +31,7 @@ Deno.serve(async (req) => {
       .from('contents')
       .select('id, title, year, genre, type, synopsis')
       .order('title')
-      .limit(2000)
+      .limit(5000)
 
     if (dbError) throw dbError
     const allTitles = catalog
