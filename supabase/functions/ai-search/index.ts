@@ -163,9 +163,29 @@ Reponds UNIQUEMENT avec un tableau JSON valide, sans texte autour :
       })
       .filter(Boolean)
 
-    console.log(`Gemini: ${recommendations.length} recos, ${results.length} matched for "${query}"`)
+    // Direct query-to-title fuzzy search: catches cases where the user says a
+    // title-like phrase that Gemini misinterprets (e.g. "un petit truc en moins"
+    // → finds "un petit truc en plus" with Jaccard 0.67).
+    const queryKey = normalise(query)
+    const resultIds = new Set((results as { content: { id: string } }[]).map((r) => r.content.id))
+    const directMatches: { content: (typeof catalog)[number]; reason: string }[] = []
 
-    return respond({ results, query })
+    for (const [catKey, catContent] of catalogByNormalised) {
+      if (resultIds.has(catContent.id)) continue
+      const score = jaccardSimilarity(queryKey, catKey)
+      if (score >= 0.55) {
+        console.log(`Direct title match (${Math.round(score * 100)}%): query "${query}" -> "${catContent.title}"`)
+        directMatches.push({ content: catContent, reason: 'Titre proche de votre recherche.' })
+        resultIds.add(catContent.id)
+      }
+    }
+
+    // Prepend direct title matches so they appear first
+    const merged = [...directMatches, ...results]
+
+    console.log(`Gemini: ${recommendations.length} recos, ${results.length} matched, ${directMatches.length} direct title matches for "${query}"`)
+
+    return respond({ results: merged, query })
   } catch (err) {
     console.error(err)
     return respond({ error: 'Erreur serveur' }, 500)
