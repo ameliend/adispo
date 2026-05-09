@@ -12,6 +12,9 @@ import ActivationPage from './components/ActivationPage.jsx'
 import PlaylistPage from './components/PlaylistPage.jsx'
 import AccountPage from './components/AccountPage.jsx'
 import SupportPage from './components/SupportPage.jsx'
+import ContactPage from './components/ContactPage.jsx'
+import MentionsLegalesPage from './components/MentionsLegalesPage.jsx'
+import CGUPage from './components/CGUPage.jsx'
 
 function Layout() {
   const navigate = useNavigate()
@@ -233,9 +236,28 @@ function Layout() {
 
       <footer className="border-t-2 border-gray-200 dark:border-gray-700 mt-16">
         <div className="max-w-2xl mx-auto px-4 py-6">
-          <p className="text-sm text-gray-600 dark:text-gray-400">
+          <p className="text-sm text-gray-600 dark:text-gray-400 mb-3">
             ADispo — Une ressource communautaire pour l'accessibilité audiovisuelle.
           </p>
+          <nav aria-label="Liens légaux et contact">
+            <ul className="flex flex-wrap gap-x-4 gap-y-2 text-sm">
+              <li>
+                <Link to="/contact" className="font-medium underline hover:no-underline focus-visible:outline-none focus-visible:ring focus-visible:ring-offset-2 focus-visible:ring-black dark:focus-visible:ring-white">
+                  Contact
+                </Link>
+              </li>
+              <li>
+                <Link to="/mentions-legales" className="font-medium underline hover:no-underline focus-visible:outline-none focus-visible:ring focus-visible:ring-offset-2 focus-visible:ring-black dark:focus-visible:ring-white">
+                  Mentions légales
+                </Link>
+              </li>
+              <li>
+                <Link to="/cgu" className="font-medium underline hover:no-underline focus-visible:outline-none focus-visible:ring focus-visible:ring-offset-2 focus-visible:ring-black dark:focus-visible:ring-white">
+                  CGU
+                </Link>
+              </li>
+            </ul>
+          </nav>
         </div>
       </footer>
     </>
@@ -256,6 +278,9 @@ export default function App() {
         <Route path="/playlist" element={<PlaylistPage />} />
         <Route path="/compte" element={<AccountPage />} />
         <Route path="/soutenir" element={<SupportPage />} />
+        <Route path="/contact" element={<ContactPage />} />
+        <Route path="/mentions-legales" element={<MentionsLegalesPage />} />
+        <Route path="/cgu" element={<CGUPage />} />
       </Route>
     </Routes>
   )
