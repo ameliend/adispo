@@ -27,17 +27,14 @@ Deno.serve(async (req) => {
 
     const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY)
 
-    // Two parallel fetches:
-    // 1. All titles (for matching) — no synopsis filter so nothing is excluded
-    // 2. Entries with synopsis (for AI prompt) — richer context, limited to 400
-    const [{ data: allTitles, error: titlesError }, { data: catalog, error: dbError }] = await Promise.all([
-      supabase.from('contents').select('id, title').limit(2000),
-      supabase.from('contents').select('id, title, year, genre, type, synopsis')
-        .not('synopsis', 'is', null).order('title').limit(400),
-    ])
+    const { data: catalog, error: dbError } = await supabase
+      .from('contents')
+      .select('id, title, year, genre, type, synopsis')
+      .order('title')
+      .limit(2000)
 
-    if (titlesError) throw titlesError
     if (dbError) throw dbError
+    const allTitles = catalog
 
     const catalogText = (catalog ?? [])
       .map((c) => {
