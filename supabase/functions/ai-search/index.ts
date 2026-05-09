@@ -26,12 +26,17 @@ Deno.serve(async (req) => {
     if (!query?.trim()) return respond({ error: 'Requete vide' }, 400)
 
     const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY)
-    const { data: catalog, error: dbError } = await supabase
-      .from('contents')
-      .select('id, title, year, genre, type, synopsis')
-      .order('synopsis', { ascending: false, nullsFirst: false })
-      .limit(400)
 
+    // Two parallel fetches:
+    // 1. All titles (for matching) — no synopsis filter so nothing is excluded
+    // 2. Entries with synopsis (for AI prompt) — richer context, limited to 400
+    const [{ data: allTitles, error: titlesError }, { data: catalog, error: dbError }] = await Promise.all([
+      supabase.from('contents').select('id, title').limit(2000),
+      supabase.from('contents').select('id, title, year, genre, type, synopsis')
+        .not('synopsis', 'is', null).order('title').limit(400),
+    ])
+
+    if (titlesError) throw titlesError
     if (dbError) throw dbError
 
     const catalogText = (catalog ?? [])
@@ -100,7 +105,7 @@ Reponds UNIQUEMENT avec un tableau JSON valide, sans texte autour :
 
     const raw = geminiData.candidates?.[0]?.content?.parts?.[0]?.text ?? ''
     console.log(`Gemini raw response (${raw.length} chars): ${raw.slice(0, 500)}`)
-    console.log(`Catalog size: ${catalog?.length ?? 0}`)
+    console.log(`Catalog size: ${allTitles?.length ?? 0} titles, ${catalog?.length ?? 0} with synopsis`)
 
     const matchJson = raw.match(/\[[\s\S]*\]/)
     let recommendations: { title: string; reason: string }[] = []
@@ -127,8 +132,9 @@ Reponds UNIQUEMENT avec un tableau JSON valide, sans texte autour :
         .replace(/\s+/g, ' ')
         .trim()
 
+    // Use allTitles for matching so entries without synopsis are not excluded
     const catalogByNormalised = new Map(
-      (catalog ?? []).map((c) => [normalise(c.title), c])
+      (allTitles ?? []).map((c) => [normalise(c.title), c])
     )
 
     // Jaccard word-overlap. Split on spaces AND apostrophes so "c'etait" and
