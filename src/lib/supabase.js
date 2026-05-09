@@ -358,7 +358,7 @@ export async function getRecentContents(limit = 10) {
         id, tmdb_id, title, year, genre, type, poster_path,
         ad_status (id, platform, status, trust_level, validation_count, lien)
       `)
-      .order('created_at', { ascending: false })
+      .order('updated_at', { ascending: false })
       .limit(limit)
     return { data, error }
   } catch (err) {
@@ -371,12 +371,12 @@ export async function getRandomByPlatform(platform, limit = 10) {
     const { data: adData, error } = await supabase
       .from('ad_status')
       .select(`
-        id, platform, status, trust_level, validation_count, lien, created_at,
+        id, platform, status, trust_level, validation_count, lien, updated_at,
         contents (id, tmdb_id, title, year, genre, type, synopsis, poster_path)
       `)
       .eq('platform', platform)
       .eq('status', 'available')
-      .order('created_at', { ascending: false })
+      .order('updated_at', { ascending: false })
       .limit(limit)
 
     if (error || !adData) return { data: null, error: error || new Error('no data') }
@@ -471,12 +471,12 @@ export async function getContentsByPlatform(platform) {
     const { data: adData, error } = await supabase
       .from('ad_status')
       .select(`
-        id, platform, status, trust_level, validation_count, lien, created_at,
+        id, platform, status, trust_level, validation_count, lien, updated_at,
         contents (id, tmdb_id, title, year, genre, type, synopsis, poster_path)
       `)
       .eq('platform', platform)
       .eq('status', 'available')
-      .order('created_at', { ascending: false })
+      .order('updated_at', { ascending: false })
 
     if (error || !adData) return { data: null, error: error || new Error('no data') }
 
