@@ -184,7 +184,7 @@ export default function VoiceSearch({ onResults, onClose }) {
       role="dialog"
       aria-modal="true"
       aria-label="Recherche vocale intelligente sur le catalogue disponible"
-      className="fixed inset-0 z-50 bg-black/92 flex flex-col items-center justify-center"
+      className="fixed inset-0 z-50 bg-black flex flex-col items-center justify-center"
     >
       {/* Close */}
       <button
