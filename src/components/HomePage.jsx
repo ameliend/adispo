@@ -47,9 +47,12 @@ function PlatformMiniCard({ content }) {
   )
 }
 
+const ADMIN_EMAIL = 'amelien.delahaie@gmail.com'
+
 export default function HomePage() {
   const { user, playlistItems, playlistLoading, announce } = useOutletContext()
   const navigate = useNavigate()
+  const isAdmin = user?.email === ADMIN_EMAIL
   const [canalContents, setCanalContents] = useState([])
   const [netflixContents, setNetflixContents] = useState([])
   const [appleContents, setAppleContents] = useState([])
@@ -86,15 +89,10 @@ export default function HomePage() {
       )}
 
       <div className="mb-10">
-        <p className="text-base text-gray-700 dark:text-gray-300 mb-2">
+        <p className="text-base text-gray-700 dark:text-gray-300 mb-4">
           Vérifiez si l'audiodescription est disponible pour un film ou une série sur
           les grandes plateformes de streaming.
         </p>
-        {contentsCount !== null && (
-          <p className="text-base text-gray-700 dark:text-gray-300 mb-4">
-            Déjà plus de {contentsCount} films et séries accessibles.
-          </p>
-        )}
         <Link
           to="/recherche"
           className="inline-block px-6 py-3 min-h-touch bg-black dark:bg-white text-white dark:text-black font-semibold rounded hover:bg-gray-800 dark:hover:bg-gray-200 focus-visible:outline-none focus-visible:ring focus-visible:ring-offset-2 focus-visible:ring-black dark:focus-visible:ring-white"
@@ -104,14 +102,21 @@ export default function HomePage() {
       </div>
 
       <section aria-labelledby="catalog-section-title" className="mb-12">
-        <h2 id="catalog-section-title" className="text-xl font-bold mb-4">
+        <h2 id="catalog-section-title" className="text-xl font-bold mb-2">
           Tout le catalogue disponible
         </h2>
+        {contentsCount !== null && (
+          <p className="text-base text-gray-700 dark:text-gray-300 mb-4">
+            Déjà plus de {contentsCount} films et séries accessibles.
+          </p>
+        )}
         <button
           type="button"
           onClick={() => setShowVoiceSearch(true)}
+          disabled={!isAdmin}
           aria-label="Recherche vocale intelligente par IA"
-          className="inline-flex items-center gap-3 px-6 py-3 min-h-touch border-2 border-black dark:border-white font-semibold rounded hover:bg-gray-100 dark:hover:bg-gray-800 focus-visible:outline-none focus-visible:ring focus-visible:ring-offset-2 focus-visible:ring-black dark:focus-visible:ring-white"
+          aria-describedby="ai-search-hint"
+          className="inline-flex items-center gap-3 px-6 py-3 min-h-touch border-2 border-black dark:border-white font-semibold rounded hover:bg-gray-100 dark:hover:bg-gray-800 focus-visible:outline-none focus-visible:ring focus-visible:ring-offset-2 focus-visible:ring-black dark:focus-visible:ring-white disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:bg-transparent dark:disabled:hover:bg-transparent"
         >
           <svg aria-hidden="true" width="22" height="22" viewBox="0 0 48 48" fill="none">
             <path
@@ -124,6 +129,21 @@ export default function HomePage() {
           </svg>
           Recherche vocale intelligente par IA
         </button>
+        <p id="ai-search-hint" className="mt-3 text-sm text-gray-600 dark:text-gray-400">
+          Par exemple : « Je recherche un film de cow-boy » ou « une série coréenne thriller ».
+        </p>
+        {!isAdmin && (
+          <p className="mt-3 text-sm text-gray-700 dark:text-gray-300">
+            Cette fonctionnalité est en cours de développement. Pour la tester,{' '}
+            <Link
+              to="/contact"
+              className="font-medium underline hover:no-underline focus-visible:outline-none focus-visible:ring focus-visible:ring-offset-2 focus-visible:ring-black dark:focus-visible:ring-white"
+            >
+              contactez-moi
+            </Link>
+            .
+          </p>
+        )}
 
         {aiResults.length > 0 && (
           <div className="mt-6">

@@ -12,6 +12,7 @@ import ActivationPage from './components/ActivationPage.jsx'
 import PlaylistPage from './components/PlaylistPage.jsx'
 import AccountPage from './components/AccountPage.jsx'
 import SupportPage from './components/SupportPage.jsx'
+import ContactPage from './components/ContactPage.jsx'
 
 function Layout() {
   const navigate = useNavigate()
@@ -233,8 +234,16 @@ function Layout() {
 
       <footer className="border-t-2 border-gray-200 dark:border-gray-700 mt-16">
         <div className="max-w-2xl mx-auto px-4 py-6">
-          <p className="text-sm text-gray-600 dark:text-gray-400">
+          <p className="text-sm text-gray-600 dark:text-gray-400 mb-2">
             ADispo — Une ressource communautaire pour l'accessibilité audiovisuelle.
+          </p>
+          <p className="text-sm">
+            <Link
+              to="/contact"
+              className="font-medium underline hover:no-underline focus-visible:outline-none focus-visible:ring focus-visible:ring-offset-2 focus-visible:ring-black dark:focus-visible:ring-white"
+            >
+              Contact
+            </Link>
           </p>
         </div>
       </footer>
@@ -256,6 +265,7 @@ export default function App() {
         <Route path="/playlist" element={<PlaylistPage />} />
         <Route path="/compte" element={<AccountPage />} />
         <Route path="/soutenir" element={<SupportPage />} />
+        <Route path="/contact" element={<ContactPage />} />
       </Route>
     </Routes>
   )
