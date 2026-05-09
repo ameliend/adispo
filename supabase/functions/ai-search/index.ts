@@ -116,18 +116,47 @@ Réponds UNIQUEMENT avec un tableau JSON valide, sans texte autour :
       (catalog ?? []).map((c) => [normalise(c.title), c])
     )
 
+    // Word-overlap (Jaccard) similarity between two normalised title strings.
+    // Ignores stopwords shorter than 2 chars to reduce noise.
+    function jaccardSimilarity(a: string, b: string): number {
+      const words = (s: string) => new Set(s.split(' ').filter((w) => w.length >= 2))
+      const wa = words(a)
+      const wb = words(b)
+      const intersection = [...wa].filter((w) => wb.has(w)).length
+      const union = new Set([...wa, ...wb]).size
+      return union === 0 ? 0 : intersection / union
+    }
+
     const results = recommendations
       .map((rec) => {
         const key = normalise(rec.title)
         let content = catalogByNormalised.get(key)
 
-        // Fallback: substring match (recommendation contains catalog title or vice-versa)
+        // Fallback 1: substring match (one title contains the other)
         if (!content && key.length >= 3) {
           for (const [catKey, catContent] of catalogByNormalised) {
-            if (catKey === key || catKey.includes(key) || key.includes(catKey)) {
+            if (catKey.includes(key) || key.includes(catKey)) {
               content = catContent
               break
             }
+          }
+        }
+
+        // Fallback 2: word-overlap similarity ≥ 0.6
+        // Catches near-misses like "un petit truc en moins" → "un petit truc en plus"
+        if (!content && key.length >= 5) {
+          let bestScore = 0
+          let bestContent = null
+          for (const [catKey, catContent] of catalogByNormalised) {
+            const score = jaccardSimilarity(key, catKey)
+            if (score > bestScore) {
+              bestScore = score
+              bestContent = catContent
+            }
+          }
+          if (bestScore >= 0.6) {
+            console.log(`Fuzzy match (${Math.round(bestScore * 100)}%): "${rec.title}" → "${bestContent?.title}"`)
+            content = bestContent
           }
         }
 
