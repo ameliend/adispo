@@ -74,13 +74,29 @@ Réponds UNIQUEMENT avec un tableau JSON valide, sans texte autour :
     )
 
     const geminiData = await geminiRes.json()
-    const raw = geminiData.candidates?.[0]?.content?.parts?.[0]?.text ?? '[]'
 
-    // Extract JSON array from response (Gemini sometimes wraps it in markdown)
-    const match = raw.match(/\[[\s\S]*?\]/)
-    const recommendations: { title: string; reason: string }[] = match
-      ? JSON.parse(match[0])
-      : []
+    if (!geminiRes.ok) {
+      console.error('Gemini API error:', geminiRes.status, JSON.stringify(geminiData))
+      return respond({ results: [], query, error: 'Gemini API error' })
+    }
+
+    const raw = geminiData.candidates?.[0]?.content?.parts?.[0]?.text ?? ''
+    console.log(`Gemini raw response (${raw.length} chars): ${raw.slice(0, 500)}`)
+    console.log(`Catalog size: ${catalog?.length ?? 0}`)
+
+    // Extract JSON array from response (Gemini sometimes wraps it in markdown).
+    // Use greedy match to capture the full array if it spans multiple objects.
+    const match = raw.match(/\[[\s\S]*\]/)
+    let recommendations: { title: string; reason: string }[] = []
+    if (match) {
+      try {
+        recommendations = JSON.parse(match[0])
+      } catch (e) {
+        console.error('JSON parse error:', e instanceof Error ? e.message : e, '— raw:', match[0].slice(0, 300))
+      }
+    } else {
+      console.log('No JSON array found in Gemini response')
+    }
 
     // Normalise titles for matching: lowercase, strip accents, normalise quotes,
     // collapse whitespace and punctuation. Tolerates Gemini's typographic
