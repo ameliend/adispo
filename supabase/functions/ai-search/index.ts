@@ -182,20 +182,33 @@ Reponds UNIQUEMENT avec un tableau JSON valide, sans texte autour :
       })
       .filter(Boolean)
 
-    // Direct query-to-title fuzzy search: catches cases where the user says a
-    // title-like phrase that Gemini misinterprets (e.g. "un petit truc en moins"
-    // → finds "un petit truc en plus" with Jaccard 0.67).
+    // Direct query-to-title search: catches cases where Gemini misinterprets
+    // the query as thematic instead of a title (ex: "chien 51", "c'etait mieux demain").
     const queryKey = normalise(query)
+    const queryWords = queryKey.split(/[\s']+/).filter((w) => w.length >= 2)
     const resultIds = new Set((results as { content: { id: string } }[]).map((r) => r.content.id))
     const directMatches: { content: (typeof catalog)[number]; reason: string }[] = []
 
     for (const [catKey, catContent] of catalogByNormalised) {
       if (resultIds.has(catContent.id)) continue
-      const score = jaccardSimilarity(queryKey, catKey)
-      if (score >= 0.55) {
-        console.log(`Direct title match (${Math.round(score * 100)}%): query "${query}" -> "${catContent.title}"`)
-        directMatches.push({ content: catContent, reason: 'Titre proche de votre recherche.' })
+      const catWords = new Set(catKey.split(/[\s']+/).filter((w) => w.length >= 2))
+
+      // Word containment: every query word appears in the title (handles "chien 51", "chien 51 le film", etc.)
+      if (queryWords.length >= 1 && queryWords.every((w) => catWords.has(w))) {
+        console.log(`Direct word match: query "${query}" -> "${catContent.title}"`)
+        directMatches.push({ content: catContent, reason: 'Correspond au titre recherche.' })
         resultIds.add(catContent.id)
+        continue
+      }
+
+      // Jaccard fallback for longer near-miss titles (ex: "un petit truc en moins" -> "en plus")
+      if (queryWords.length >= 3) {
+        const score = jaccardSimilarity(queryKey, catKey)
+        if (score >= 0.55) {
+          console.log(`Direct Jaccard match (${Math.round(score * 100)}%): query "${query}" -> "${catContent.title}"`)
+          directMatches.push({ content: catContent, reason: 'Titre proche de votre recherche.' })
+          resultIds.add(catContent.id)
+        }
       }
     }
 
