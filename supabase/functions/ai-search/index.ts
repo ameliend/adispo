@@ -55,7 +55,9 @@ ${catalogText}
 
 L'utilisateur demande : "${query}"
 
-Selectionne 3 a 5 titres du catalogue qui correspondent le mieux a cette demande. Tiens compte du contexte, des themes, des genres, de la langue ou du pays evoques.
+ETAPE 1 - RECHERCHE DE TITRE EXACT : Si la demande ressemble a un titre de film ou de serie (ex: "c etait mieux demain", "un petit truc en plus", "la plateforme 2"), cherche d abord ce titre ou un titre tres proche (1 ou 2 mots differents) dans le catalogue. Si tu le trouves, inclus-le en premier dans ta reponse avec la raison "Correspond au titre recherche."
+
+ETAPE 2 - RECOMMANDATIONS THEMATIQUES : Selectionne 2 a 4 autres titres du catalogue qui correspondent aux themes, genres, pays ou ambiance de la demande.
 
 Reponds UNIQUEMENT avec un tableau JSON valide, sans texte autour :
 [{"title": "Titre exact du catalogue", "reason": "Explication courte en 1 phrase pourquoi ce titre correspond"}]`
@@ -112,10 +114,10 @@ Reponds UNIQUEMENT avec un tableau JSON valide, sans texte autour :
       (catalog ?? []).map((c) => [normalise(c.title), c])
     )
 
-    // Jaccard word-overlap — catches near-misses like
-    // "un petit truc en moins" (score 0.67) -> "un petit truc en plus"
+    // Jaccard word-overlap. Split on spaces AND apostrophes so "c'etait" and
+    // "cetait" both yield the token "etait", avoiding elision mismatches.
     function jaccardSimilarity(a: string, b: string): number {
-      const words = (s: string) => new Set(s.split(' ').filter((w) => w.length >= 2))
+      const words = (s: string) => new Set(s.split(/[\s']+/).filter((w) => w.length >= 2))
       const wa = words(a)
       const wb = words(b)
       const intersection = [...wa].filter((w) => wb.has(w)).length
