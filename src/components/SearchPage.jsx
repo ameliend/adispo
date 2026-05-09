@@ -4,7 +4,6 @@ import { searchTitles, getContentByTmdbId } from '../lib/supabase.js'
 import { searchTmdb, posterUrl } from '../lib/tmdb.js'
 import { PLATFORM_LABELS } from '../lib/platforms.js'
 import ResultCard from './ResultCard.jsx'
-import VoiceSearch from './VoiceSearch.jsx'
 
 const PLATFORMS = [
   { value: '', label: 'Toutes les plateformes' },
@@ -52,17 +51,6 @@ export default function SearchPage() {
   const [hasBrowsed, setHasBrowsed] = useState(false)
 
   const searchInputRef = useRef(null)
-
-  // AI voice search
-  const [showVoiceSearch, setShowVoiceSearch] = useState(false)
-  const [aiResults, setAiResults] = useState([])
-  const [aiQuery, setAiQuery] = useState('')
-
-  function handleAiResults(results, query) {
-    setAiResults(results)
-    setAiQuery(query)
-    announce(`${results.length} recommandation${results.length > 1 ? 's' : ''} trouvée${results.length > 1 ? 's' : ''} pour : ${query}`)
-  }
 
   // Debounced TMDB autocomplete
   useEffect(() => {
@@ -144,13 +132,6 @@ export default function SearchPage() {
 
   return (
     <>
-      {showVoiceSearch && (
-        <VoiceSearch
-          onResults={handleAiResults}
-          onClose={() => setShowVoiceSearch(false)}
-        />
-      )}
-
       <button
         onClick={() => navigate(-1)}
         className="mb-6 text-sm font-medium underline hover:no-underline focus-visible:outline-none focus-visible:ring focus-visible:ring-offset-2 focus-visible:ring-black dark:focus-visible:ring-white"
@@ -167,63 +148,6 @@ export default function SearchPage() {
         {browseStatus}
       </div>
 
-      {/* AI recommendations */}
-      {aiResults.length > 0 && (
-        <section aria-labelledby="ai-results-title" className="mb-10">
-          <div className="flex items-center gap-3 mb-4">
-            <h2 id="ai-results-title" className="text-xl font-bold">
-              Recommandations
-            </h2>
-            <span className="inline-flex items-center gap-1 px-2 py-0.5 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-full text-xs font-medium">
-              <svg aria-hidden="true" width="10" height="10" viewBox="0 0 48 48" fill="none">
-                <path d="M40 8l1.2 3.6L44.8 13l-3.6 1.2L40 17.8l-1.2-3.6L35.2 13l3.6-1.2Z" fill="currentColor"/>
-              </svg>
-              IA
-            </span>
-          </div>
-          <p className="text-sm text-gray-600 dark:text-gray-400 mb-4 italic">
-            « {aiQuery} »
-          </p>
-          <ul className="space-y-4">
-            {aiResults.map(({ content, reason }) => (
-              <li key={content.id}>
-                <article
-                  aria-labelledby={`ai-title-${content.id}`}
-                  className="p-4 border-2 border-gray-300 dark:border-gray-700 rounded-lg hover:border-black dark:hover:border-white transition-colors"
-                >
-                  <h3 id={`ai-title-${content.id}`} className="font-semibold text-base mb-1">
-                    {content.title}
-                    {content.year && (
-                      <span className="ml-2 font-normal text-sm text-gray-600 dark:text-gray-400">
-                        ({content.year})
-                      </span>
-                    )}
-                  </h3>
-                  {content.genre && (
-                    <p className="text-sm text-gray-600 dark:text-gray-400 mb-2">{content.genre}</p>
-                  )}
-                  <p className="text-sm text-gray-700 dark:text-gray-300 mb-3 italic">
-                    {reason}
-                  </p>
-                  <button
-                    onClick={() => navigate(`/contenu/${content.id}`)}
-                    className="text-sm font-medium underline hover:no-underline focus-visible:outline-none focus-visible:ring focus-visible:ring-offset-2 focus-visible:ring-black dark:focus-visible:ring-white"
-                  >
-                    Voir les détails →
-                  </button>
-                </article>
-              </li>
-            ))}
-          </ul>
-          <button
-            onClick={() => { setAiResults([]); setAiQuery('') }}
-            className="mt-4 text-sm text-gray-600 dark:text-gray-400 underline hover:no-underline focus-visible:outline-none focus-visible:ring focus-visible:ring-offset-2 focus-visible:ring-black dark:focus-visible:ring-white"
-          >
-            Effacer les recommandations
-          </button>
-        </section>
-      )}
-
       {/* TMDB search */}
       <section aria-labelledby="search-section-title" className="mb-8">
         <h2 id="search-section-title" className="text-xl font-bold mb-4">
@@ -234,40 +158,22 @@ export default function SearchPage() {
           <label htmlFor="tmdb-search-input" className="block mb-2 font-medium">
             Titre du film ou de la série
           </label>
-          <div className="flex gap-2 items-start">
-            <input
-              id="tmdb-search-input"
-              ref={searchInputRef}
-              type="search"
-              value={tmdbQuery}
-              onChange={(e) => {
-                setTmdbQuery(e.target.value)
-                setSelectedTmdb(null)
-                setDbStatus('idle')
-              }}
-              aria-describedby="tmdb-search-status"
-              autoComplete="off"
-              spellCheck="false"
-              placeholder="Ex. : Lupin, La La Land…"
-              className="flex-1 px-4 py-3 min-h-touch border-2 border-black dark:border-white rounded bg-white dark:bg-gray-900 text-base placeholder-gray-500 dark:placeholder-gray-400 focus-visible:outline-none focus-visible:ring focus-visible:ring-offset-2 focus-visible:ring-black dark:focus-visible:ring-white"
-            />
-            <button
-              type="button"
-              onClick={() => setShowVoiceSearch(true)}
-              aria-label="Recherche vocale intelligente sur le catalogue disponible"
-              className="flex-shrink-0 w-14 min-h-touch flex items-center justify-center border-2 border-black dark:border-white rounded hover:bg-gray-100 dark:hover:bg-gray-800 focus-visible:outline-none focus-visible:ring focus-visible:ring-offset-2 focus-visible:ring-black dark:focus-visible:ring-white"
-            >
-              <svg aria-hidden="true" width="26" height="26" viewBox="0 0 48 48" fill="none">
-                <rect x="17" y="6" width="14" height="22" rx="7" fill="currentColor"/>
-                <path d="M10 24c0 7.732 6.268 14 14 14s14-6.268 14-14" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round"/>
-                <line x1="24" y1="38" x2="24" y2="44" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round"/>
-                <line x1="16" y1="44" x2="32" y2="44" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round"/>
-                <path d="M40 8l1.2 3.6L44.8 13l-3.6 1.2L40 17.8l-1.2-3.6L35.2 13l3.6-1.2Z" fill="currentColor" opacity="0.85"/>
-                <path d="M7 10l.8 2.4L10.2 14l-2.4.8L7 17.2l-.8-2.4L3.8 14l2.4-.8Z" fill="currentColor" opacity="0.7"/>
-                <circle cx="42" cy="28" r="1.5" fill="currentColor" opacity="0.6"/>
-              </svg>
-            </button>
-          </div>
+          <input
+            id="tmdb-search-input"
+            ref={searchInputRef}
+            type="search"
+            value={tmdbQuery}
+            onChange={(e) => {
+              setTmdbQuery(e.target.value)
+              setSelectedTmdb(null)
+              setDbStatus('idle')
+            }}
+            aria-describedby="tmdb-search-status"
+            autoComplete="off"
+            spellCheck="false"
+            placeholder="Ex. : Lupin, La La Land…"
+            className="w-full px-4 py-3 min-h-touch border-2 border-black dark:border-white rounded bg-white dark:bg-gray-900 text-base placeholder-gray-500 dark:placeholder-gray-400 focus-visible:outline-none focus-visible:ring focus-visible:ring-offset-2 focus-visible:ring-black dark:focus-visible:ring-white"
+          />
         </div>
 
         {/* TMDB autocomplete results */}

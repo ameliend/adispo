@@ -95,72 +95,77 @@ export default function HomePage() {
             Déjà plus de {contentsCount} films et séries accessibles.
           </p>
         )}
-        <div className="flex flex-wrap gap-3">
-          <Link
-            to="/recherche"
-            className="inline-block px-6 py-3 min-h-touch bg-black dark:bg-white text-white dark:text-black font-semibold rounded hover:bg-gray-800 dark:hover:bg-gray-200 focus-visible:outline-none focus-visible:ring focus-visible:ring-offset-2 focus-visible:ring-black dark:focus-visible:ring-white"
-          >
-            Rechercher un titre
-          </Link>
-          <button
-            type="button"
-            onClick={() => setShowVoiceSearch(true)}
-            aria-label="Recherche vocale intelligente par IA"
-            className="inline-flex items-center gap-2 px-6 py-3 min-h-touch border-2 border-black dark:border-white font-semibold rounded hover:bg-gray-100 dark:hover:bg-gray-800 focus-visible:outline-none focus-visible:ring focus-visible:ring-offset-2 focus-visible:ring-black dark:focus-visible:ring-white"
-          >
-            <svg aria-hidden="true" width="16" height="16" viewBox="0 0 48 48" fill="none">
-              <path d="M40 8l1.2 3.6L44.8 13l-3.6 1.2L40 17.8l-1.2-3.6L35.2 13l3.6-1.2Z" fill="currentColor"/>
-              <path d="M7 10l.8 2.4L10.2 14l-2.4.8L7 17.2l-.8-2.4L3.8 14l2.4-.8Z" fill="currentColor" opacity="0.7"/>
-              <circle cx="42" cy="28" r="1.5" fill="currentColor" opacity="0.6"/>
-            </svg>
-            Recherche IA
-          </button>
-        </div>
+        <Link
+          to="/recherche"
+          className="inline-block px-6 py-3 min-h-touch bg-black dark:bg-white text-white dark:text-black font-semibold rounded hover:bg-gray-800 dark:hover:bg-gray-200 focus-visible:outline-none focus-visible:ring focus-visible:ring-offset-2 focus-visible:ring-black dark:focus-visible:ring-white"
+        >
+          Rechercher un titre
+        </Link>
       </div>
 
-      {aiResults.length > 0 && (
-        <section aria-labelledby="ai-results-title" className="mb-10">
-          <div className="flex items-center gap-3 mb-4">
-            <h2 id="ai-results-title" className="text-xl font-bold">Recommandations IA</h2>
-          </div>
-          <p className="text-sm text-gray-600 dark:text-gray-400 mb-4 italic">« {aiQuery} »</p>
-          <ul className="space-y-4">
-            {aiResults.map(({ content, reason }) => (
-              <li key={content.id}>
-                <article
-                  aria-labelledby={`ai-title-${content.id}`}
-                  className="p-4 border-2 border-gray-300 dark:border-gray-700 rounded-lg hover:border-black dark:hover:border-white transition-colors"
-                >
-                  <h3 id={`ai-title-${content.id}`} className="font-semibold text-base mb-1">
-                    {content.title}
-                    {content.year && (
-                      <span className="ml-2 font-normal text-sm text-gray-600 dark:text-gray-400">
-                        ({content.year})
-                      </span>
-                    )}
-                  </h3>
-                  {content.genre && (
-                    <p className="text-sm text-gray-600 dark:text-gray-400 mb-2">{content.genre}</p>
-                  )}
-                  <p className="text-sm text-gray-700 dark:text-gray-300 mb-3 italic">{reason}</p>
-                  <button
-                    onClick={() => navigate(`/contenu/${content.id}`)}
-                    className="text-sm font-medium underline hover:no-underline focus-visible:outline-none focus-visible:ring focus-visible:ring-offset-2 focus-visible:ring-black dark:focus-visible:ring-white"
+      <section aria-labelledby="catalog-section-title" className="mb-12">
+        <h2 id="catalog-section-title" className="text-xl font-bold mb-4">
+          Tout le catalogue disponible
+        </h2>
+        <button
+          type="button"
+          onClick={() => setShowVoiceSearch(true)}
+          aria-label="Recherche vocale intelligente par IA"
+          className="inline-flex items-center gap-3 px-6 py-3 min-h-touch border-2 border-black dark:border-white font-semibold rounded hover:bg-gray-100 dark:hover:bg-gray-800 focus-visible:outline-none focus-visible:ring focus-visible:ring-offset-2 focus-visible:ring-black dark:focus-visible:ring-white"
+        >
+          <svg aria-hidden="true" width="22" height="22" viewBox="0 0 48 48" fill="none">
+            <path
+              d="M24 3 C 25 16, 32 23, 45 24 C 32 25, 25 32, 24 45 C 23 32, 16 25, 3 24 C 16 23, 23 16, 24 3 Z"
+              stroke="currentColor"
+              strokeWidth="3"
+              strokeLinejoin="round"
+              fill="none"
+            />
+          </svg>
+          Recherche vocale intelligente par IA
+        </button>
+
+        {aiResults.length > 0 && (
+          <div className="mt-6">
+            <p className="text-sm text-gray-600 dark:text-gray-400 mb-4 italic">« {aiQuery} »</p>
+            <ul className="space-y-4">
+              {aiResults.map(({ content, reason }) => (
+                <li key={content.id}>
+                  <article
+                    aria-labelledby={`ai-title-${content.id}`}
+                    className="p-4 border-2 border-gray-300 dark:border-gray-700 rounded-lg hover:border-black dark:hover:border-white transition-colors"
                   >
-                    Voir les détails →
-                  </button>
-                </article>
-              </li>
-            ))}
-          </ul>
-          <button
-            onClick={() => { setAiResults([]); setAiQuery('') }}
-            className="mt-4 text-sm text-gray-600 dark:text-gray-400 underline hover:no-underline focus-visible:outline-none focus-visible:ring focus-visible:ring-offset-2 focus-visible:ring-black dark:focus-visible:ring-white"
-          >
-            Effacer les recommandations
-          </button>
-        </section>
-      )}
+                    <h3 id={`ai-title-${content.id}`} className="font-semibold text-base mb-1">
+                      {content.title}
+                      {content.year && (
+                        <span className="ml-2 font-normal text-sm text-gray-600 dark:text-gray-400">
+                          ({content.year})
+                        </span>
+                      )}
+                    </h3>
+                    {content.genre && (
+                      <p className="text-sm text-gray-600 dark:text-gray-400 mb-2">{content.genre}</p>
+                    )}
+                    <p className="text-sm text-gray-700 dark:text-gray-300 mb-3 italic">{reason}</p>
+                    <button
+                      onClick={() => navigate(`/contenu/${content.id}`)}
+                      className="text-sm font-medium underline hover:no-underline focus-visible:outline-none focus-visible:ring focus-visible:ring-offset-2 focus-visible:ring-black dark:focus-visible:ring-white"
+                    >
+                      Voir les détails →
+                    </button>
+                  </article>
+                </li>
+              ))}
+            </ul>
+            <button
+              onClick={() => { setAiResults([]); setAiQuery('') }}
+              className="mt-4 text-sm text-gray-600 dark:text-gray-400 underline hover:no-underline focus-visible:outline-none focus-visible:ring focus-visible:ring-offset-2 focus-visible:ring-black dark:focus-visible:ring-white"
+            >
+              Effacer les recommandations
+            </button>
+          </div>
+        )}
+      </section>
 
       {user && !playlistLoading && playlistItems.length > 0 && (
         <section aria-labelledby="playlist-section-title" className="mb-12">
