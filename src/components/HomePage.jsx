@@ -122,7 +122,7 @@ export default function HomePage() {
           <button
             type="button"
             onClick={() => isAdmin && setShowVoiceSearch(true)}
-            aria-label="Recherche vocale intelligente par IA"
+            aria-label="Recherche vocale avec IA"
             aria-describedby={!isAdmin ? 'ai-voice-tooltip' : 'ai-search-hint'}
             onFocus={() => !isAdmin && setTooltipVisible(true)}
             onBlur={() => setTooltipVisible(false)}
@@ -138,7 +138,7 @@ export default function HomePage() {
                 fill="none"
               />
             </svg>
-            Recherche vocale intelligente par IA
+            Recherche vocale avec IA
           </button>
 
           {!isAdmin && tooltipVisible && (
