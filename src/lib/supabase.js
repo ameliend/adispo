@@ -371,19 +371,17 @@ export async function getRandomByPlatform(platform, limit = 10) {
     const { data: adData, error } = await supabase
       .from('ad_status')
       .select(`
-        id, platform, status, trust_level, validation_count, lien,
+        id, platform, status, trust_level, validation_count, lien, created_at,
         contents (id, tmdb_id, title, year, genre, type, synopsis, poster_path)
       `)
       .eq('platform', platform)
       .eq('status', 'available')
-      .limit(200)
+      .order('created_at', { ascending: false })
+      .limit(limit)
 
     if (error || !adData) return { data: null, error: error || new Error('no data') }
 
-    const valid = adData.filter((s) => s.contents)
-    const shuffled = [...valid].sort(() => Math.random() - 0.5).slice(0, limit)
-
-    const data = shuffled.map((s) => ({
+    const data = adData.filter((s) => s.contents).map((s) => ({
       ...s.contents,
       ad_status: [
         {
@@ -473,11 +471,12 @@ export async function getContentsByPlatform(platform) {
     const { data: adData, error } = await supabase
       .from('ad_status')
       .select(`
-        id, platform, status, trust_level, validation_count, lien,
+        id, platform, status, trust_level, validation_count, lien, created_at,
         contents (id, tmdb_id, title, year, genre, type, synopsis, poster_path)
       `)
       .eq('platform', platform)
       .eq('status', 'available')
+      .order('created_at', { ascending: false })
 
     if (error || !adData) return { data: null, error: error || new Error('no data') }
 
@@ -496,7 +495,6 @@ export async function getContentsByPlatform(platform) {
           },
         ],
       }))
-      .sort((a, b) => a.title.localeCompare(b.title, 'fr'))
 
     return { data, error: null }
   } catch (err) {
